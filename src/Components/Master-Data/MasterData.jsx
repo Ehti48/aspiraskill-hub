@@ -361,6 +361,21 @@ const aspirants = [
     location: "Bangalore",
     altPhone: "1234567890",
   },
+  {
+    id: "AS0105",
+    name: "Ainul Marliya",
+    gender: "Female",
+    technology: "Vue JS",
+    status: "Hired",
+    about:
+      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolorum eum at facilis deleniti maxime ducimus nulla est quibusdam perspiciatis eaque! Corrupti voluptate modi dignissimos sunt earum a rerum magnam aliquam ab minus natus qui molestiae consectetur porro.",
+    joiningDate: "2023-01-01",
+    endDate: "2023-01-31",
+    phone: "9012345678",
+    email: "ainul@gmail.com",
+    location: "ambur",
+    altPhone: "1234567890",
+  },
   // Add more data here as needed
 ];
 

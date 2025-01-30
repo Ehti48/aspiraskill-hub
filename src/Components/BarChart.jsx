@@ -61,14 +61,19 @@ const options = {
 // Styled container for the chart
 const ChartContainer = styled.div`
   width: 100%;
-  max-width: 800px;
-  height: 300px;
+  max-width: 1000px;
+  height: auto;
+
+  .bar {
+    width: 90% !important;
+    height: auto !important;
+  }
 `;
 
 const MyChart = () => {
   return (
     <ChartContainer>
-      <Bar data={data} options={options} />
+      <Bar className='bar' data={data} options={options} />
     </ChartContainer>
   );
 };
