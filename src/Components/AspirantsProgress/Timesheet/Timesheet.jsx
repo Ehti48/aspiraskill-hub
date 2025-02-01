@@ -258,9 +258,9 @@ const Wrapper = styled.section`
 
 const Timesheet = () => {
   const [students, setStudents] = useState([
-    { id: 'ASP0244', name: 'Ibrahim K', technology: 'Basic Web Technology', mode: '-', status: '-', date: '2024-11-05' },
-    { id: 'ASP0245', name: 'Iqhyan', technology: 'React JS', mode: '-', status: '-', date: '2024-10-15' },
-    // { id: 'ASP0244', name: 'Ibrahim K', technology: 'Basic Web Technology', mode: '-', status: '-', date: '2024-11-05' },
+    { id: 'ASP0244', name: 'Ibrahim K', technology: 'Basic Web Technology', mode: '-', status: '-', date: '2024-11-05', gender: 'Male' },
+    { id: 'ASP0245', name: 'Iqhyan', technology: 'React JS', mode: '-', status: '-', date: '2024-10-15', gender: 'Male' },
+    { id: 'ASP0244', name: 'Ayesha', technology: 'Basic Web Technology', mode: '-', status: '-', date: '2024-11-05', gender: 'Female' },
     // { id: 'ASP0245', name: 'Iqhyan', technology: 'React JS', mode: '-', status: '-', date: '2024-10-15' },
     // { id: 'ASP0244', name: 'Ibrahim K', technology: 'Basic Web Technology', mode: '-', status: '-', date: '2024-11-05' },
     // { id: 'ASP0245', name: 'Iqhyan', technology: 'React JS', mode: '-', status: '-', date: '2024-10-15' },
@@ -309,6 +309,17 @@ const Timesheet = () => {
   const handleDateToChange = (e) => setDateTo(e.target.value);
   const handleMonthChange = (e) => setSelectedMonth(e.target.value);
   const handleCategoryChange = (e) => setSelectedCategory(e.target.value);
+
+  const handleGenderChange = (e) => {
+    const genderValue = e.target.value.toLowerCase();
+    const filtered = students.filter((student) => {
+      const genderMatch = genderValue ? student.gender.toLowerCase() === genderValue : true;
+      return genderMatch;
+    });
+
+    setFilteredStudents(filtered); // Update filtered students
+  };
+
 
   return (
     <Wrapper>
@@ -404,7 +415,7 @@ const Timesheet = () => {
           <div className="date-section">
             <div className="date-form">
               <label htmlFor="gender">Gender</label>
-              <select name="gender" id="gender">
+              <select name="gender" id="gender" onChange={handleGenderChange}>
                 <option value="">Select Gender</option>
                 <option value="male">Male</option>
                 <option value="female">Female</option>
