@@ -148,6 +148,11 @@ p {
   flex-direction: row;
 }
 
+.radio-text {
+  pointer-events: auto;  /* Ensure labels are clickable */
+}
+
+
 @media screen and (max-width: 1200px) {
 .container{
     width: -webkit-fill-available;
@@ -338,26 +343,25 @@ const RegistrationForm = () => {
               <div className="form-group">
                 <label>Gender</label>
                 <div className="radio-group">
-                  <label>
-                    <input
-                      type="radio"
-                      className="radio-btns"
-                      name="Gender"
-                      value="Male"
-                      onChange={handleChange}
-                    />{" "}
-                    <p className="radio-text">Male</p>
-                  </label>
-                  <label>
-                    <input
-                      type="radio"
-                      className="radio-btns"
-                      name="Gender"
-                      value="Female"
-                      onChange={handleChange}
-                    />{" "}
-                    <p className="radio-text">Female</p>
-                  </label>
+                  <input
+                    type="radio"
+                    className="radio-btns"
+                    name="Gender"
+                    value="Male"
+                    id="Male"
+                    onChange={handleChange}
+                  />
+                  <label htmlFor="Male" className="radio-text">Male</label>
+
+                  <input
+                    type="radio"
+                    className="radio-btns"
+                    name="Gender"
+                    value="Female"
+                    id="Female"
+                    onChange={handleChange}
+                  />
+                  <label htmlFor="Female" className="radio-text">Female</label>
                 </div>
                 {errors.Gender && <p>{errors.Gender}</p>}
               </div>

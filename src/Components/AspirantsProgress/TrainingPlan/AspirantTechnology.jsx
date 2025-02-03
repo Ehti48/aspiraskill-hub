@@ -265,7 +265,7 @@ const Wrapper = styled.section`
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     z-index: 1000;
     width: 90%;
-    max-width: 600px;
+    max-width: 500px;
     height: auto;
     align-items: start;
     justify-content: space-between;
@@ -294,7 +294,7 @@ const Wrapper = styled.section`
   .modal-header {
     width: 100%;
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
     margin-bottom: 30px;
     padding-bottom: 10px;
@@ -309,6 +309,15 @@ const Wrapper = styled.section`
       color: #252e4a99;
       border: none;
     }
+  }
+
+  .del-icon {
+    width: 70px;
+    height: 70px;
+    background: #ff6b63;
+    border-radius: 50%;
+    padding: 17px;
+    margin: 10px auto;
   }
 
   .input-group {
@@ -540,7 +549,9 @@ const AspirantTecnology = () => {
             <div className="modal-header delete">
               <button onClick={() => setIsDeleteModalOpen(false)}>✖</button>
             </div>
-
+            <div class="del-icon">
+              <img src="https://admin.aspiraskillhub.aspirasys.com/images/mdi_trash.png" alt="delete"/>
+            </div>
             <p>Are you sure?</p>
             <span>To delete {students[deleteIndex]?.techName || 'this technology'}?</span>
             <div className="modal-footer delete">

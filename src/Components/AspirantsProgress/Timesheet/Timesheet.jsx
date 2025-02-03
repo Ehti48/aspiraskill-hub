@@ -260,12 +260,8 @@ const Timesheet = () => {
   const [students, setStudents] = useState([
     { id: 'ASP0244', name: 'Ibrahim K', technology: 'Basic Web Technology', mode: '-', status: '-', date: '2024-11-05', gender: 'Male' },
     { id: 'ASP0245', name: 'Iqhyan', technology: 'React JS', mode: '-', status: '-', date: '2024-10-15', gender: 'Male' },
-    { id: 'ASP0244', name: 'Ayesha', technology: 'Basic Web Technology', mode: '-', status: '-', date: '2024-11-05', gender: 'Female' },
-    // { id: 'ASP0245', name: 'Iqhyan', technology: 'React JS', mode: '-', status: '-', date: '2024-10-15' },
-    // { id: 'ASP0244', name: 'Ibrahim K', technology: 'Basic Web Technology', mode: '-', status: '-', date: '2024-11-05' },
-    // { id: 'ASP0245', name: 'Iqhyan', technology: 'React JS', mode: '-', status: '-', date: '2024-10-15' },
-    // { id: 'ASP0244', name: 'Ibrahim K', technology: 'Basic Web Technology', mode: '-', status: '-', date: '2024-11-05' },
-    // { id: 'ASP0245', name: 'Iqhyan', technology: 'React JS', mode: '-', status: '-', date: '2024-10-15' },
+    { id: 'ASP0246', name: 'Asma', technology: 'Node JS', mode: '-', status: '-', date: '2024-11-05', gender: 'Female' },
+    { id: 'ASP0247', name: 'Safwa', technology: 'Node JS', mode: '-', status: '-', date: '2024-10-15', gender: 'Female' },
   ]);
 
   const [filteredStudents, setFilteredStudents] = useState(students); // Store filtered students
@@ -310,14 +306,20 @@ const Timesheet = () => {
   const handleMonthChange = (e) => setSelectedMonth(e.target.value);
   const handleCategoryChange = (e) => setSelectedCategory(e.target.value);
 
-  const handleGenderChange = (e) => {
-    const genderValue = e.target.value.toLowerCase();
-    const filtered = students.filter((student) => {
-      const genderMatch = genderValue ? student.gender.toLowerCase() === genderValue : true;
-      return genderMatch;
-    });
+  const [selectedGender, setSelectedGender] = useState('');
 
-    setFilteredStudents(filtered); // Update filtered students
+  // Update selected gender but don't filter yet
+  const handleGenderChange = (e) => {
+    setSelectedGender(e.target.value);
+  };
+
+  // Trigger filtering when search button is clicked
+  const handleGenderSearch = () => {
+    const gender = selectedGender.toLowerCase();
+    const filtered = students.filter(
+      (student) => student.gender.toLowerCase() === gender || gender === ''
+    );
+    setFilteredStudents(filtered);
   };
 
 
@@ -422,7 +424,7 @@ const Timesheet = () => {
               </select>
             </div>
             <div className="src-button">
-              <button type="button" onClick={handleSearchClick}>
+              <button type="button" onClick={handleGenderSearch}>
                 <img src="https://admin.aspiraskillhub.aspirasys.com/images/search.png" alt="Search" />
               </button>
               <button type="button" className="reset-button" onClick={handleReset}>

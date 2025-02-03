@@ -5,7 +5,6 @@ import { Link, useLocation } from "react-router-dom";
 import { MdKeyboardArrowRight } from "react-icons/md";
 
 const Wrapper = styled.section`
-
   .breadCrumb {
     font-size: 18px !important;
     display: flex;
@@ -14,12 +13,12 @@ const Wrapper = styled.section`
     margin-bottom: 10px;
 
     svg {
-        font-size: 30px;
-        color: #252E4A99;
+      font-size: 30px;
+      color: #252e4a99;
     }
-    a{
-        text-decoration: none;
-        color: #252E4A99;
+    a {
+      text-decoration: none;
+      color: #252e4a99;
     }
   }
 
@@ -49,7 +48,7 @@ const Wrapper = styled.section`
 
   .resume-btn {
     padding: 8px 20px;
-    background: #6AAA43;
+    background: #6aaa43;
     color: white;
     border: none;
     border-radius: 5px;
@@ -78,7 +77,7 @@ const Wrapper = styled.section`
     display: flex;
     flex-wrap: wrap;
     gap: 20px;
-    margin-bottom: 20px
+    margin-bottom: 20px;
   }
 
   .form-group {
@@ -90,38 +89,44 @@ const Wrapper = styled.section`
       max-width: 160px;
       position: relative;
 
-        .date-icon {
-    width: 16px;
-    height: 16px;
-    position: absolute;
-    right: 22px;
-    bottom: 13px !important;
-    background: white;
-    pointer-events: none;
-    bottom: 12px;
-    display: flex;
+      .date-icon {
+        width: 16px;
+        height: 16px;
+        position: absolute;
+        right: 22px;
+        bottom: 13px !important;
+        background: white;
+        pointer-events: none;
+        bottom: 12px;
+        display: flex;
 
-    img {
-      width: 100%;
-      height: 100%;
-    }
-  }
+        img {
+          width: 100%;
+          height: 100%;
+        }
+      }
     }
   }
 
   .form-group label {
     display: block;
     font-weight: 400;
-    color: #767A7A;
+    color: #767a7a;
     margin-bottom: 15px;
     font-size: 14px;
+    cursor: pointer;
+  }
+
+  .radioLabel {
+    margin-bottom: 0px !important;
+    font-size: 16px !important;
   }
 
   input,
   select {
     width: 100%;
     padding: 12px 20px;
-    background: #DEDEDE1A;
+    background: #dedede1a;
     color: #545454;
     font-size: 14px;
     border: 1px solid #dedede80;
@@ -130,10 +135,9 @@ const Wrapper = styled.section`
     cursor: default;
 
     &option {
-     color: #545454;
+      color: #545454;
     }
   }
-    
 
   .radio-group {
     margin-top: 20px;
@@ -142,7 +146,7 @@ const Wrapper = styled.section`
     align-items: center;
     font-size: 16px;
     font-weight: 400;
-    color: #767A7A;
+    color: #767a7a;
     cursor: pointer;
 
     input {
@@ -150,13 +154,14 @@ const Wrapper = styled.section`
       margin-right: -15px;
     }
   }
-    .form-btns{
-      margin-top: 40px;
-      display: flex;
-      justify-content: start;
-      column-gap: 30px;
-    }
-  .accept-btn, .reject-btn {
+  .form-btns {
+    margin-top: 40px;
+    display: flex;
+    justify-content: start;
+    column-gap: 30px;
+  }
+  .accept-btn,
+  .reject-btn {
     display: inline-block;
     padding: 8px 20px;
     background: #3282c4;
@@ -165,13 +170,13 @@ const Wrapper = styled.section`
     border-radius: 5px;
     cursor: pointer;
   }
-    .reject-btn{
-      background: #6AAA43;
-      border: 1px solid #6AAA43;
-      color: #fff;
-      font-size: 14px;
-      font-weight: 500;
-    }
+  .reject-btn {
+    background: #6aaa43;
+    border: 1px solid #6aaa43;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+  }
 
   @media (max-width: 500px) {
     .heading h1 {
@@ -181,7 +186,6 @@ const Wrapper = styled.section`
 `;
 
 function AspirantsView() {
-
   const location = useLocation();
   const aspirant = location.state?.aspirant;
 
@@ -226,12 +230,11 @@ function AspirantsView() {
     setIsEditing(false);
   };
 
-
-
   return (
     <Wrapper>
       <div className="breadCrumb">
-        <Link to="/admin/new-registration">Registeration</Link> <MdKeyboardArrowRight /> <span> {aspirant.id} </span>
+        <Link to="/admin/new-registration">Registeration</Link>{" "}
+        <MdKeyboardArrowRight /> <span> {aspirant.id} </span>
       </div>
       <div className="registration-container">
         <form onSubmit={handleSubmit}>
@@ -239,9 +242,13 @@ function AspirantsView() {
             <Heading title={` #${aspirant.id} - ${aspirant.fullName}`} />
             <button className="resume-btn">
               <div class="resume">
-                <img src="https://admin.aspiraskillhub.aspirasys.com/images/frame.svg" alt="" />
+                <img
+                  src="https://admin.aspiraskillhub.aspirasys.com/images/frame.svg"
+                  alt=""
+                />
               </div>
-              Resume</button>
+              Resume
+            </button>
           </div>
           <div className="form-row">
             <div className="form-group">
@@ -252,7 +259,11 @@ function AspirantsView() {
                 value={formData.firstName}
                 onChange={handleChange}
                 readOnly={!isEditing}
-                style={{border: isEditing ? '1px solid rgb(193, 193, 193)' : '1px solid #dedede80'}}
+                style={{
+                  border: isEditing
+                    ? "1px solid rgb(193, 193, 193)"
+                    : "1px solid #dedede80",
+                }}
               />
             </div>
             <div className="form-group">
@@ -262,8 +273,12 @@ function AspirantsView() {
                 name="lastName"
                 value={formData.lastName}
                 onChange={handleChange}
-                 readOnly={!isEditing}
-                style={{border: isEditing ? '1px solid rgb(193, 193, 193)' : '1px solid #dedede80'}}
+                readOnly={!isEditing}
+                style={{
+                  border: isEditing
+                    ? "1px solid rgb(193, 193, 193)"
+                    : "1px solid #dedede80",
+                }}
               />
             </div>
             <div className="form-group">
@@ -274,11 +289,18 @@ function AspirantsView() {
                   name="dob"
                   value={formData.doba}
                   onChange={handleChange}
-                   readOnly={!isEditing}
-                style={{border: isEditing ? '1px solid rgb(193, 193, 193)' : '1px solid #dedede80'}}
+                  readOnly={!isEditing}
+                  style={{
+                    border: isEditing
+                      ? "1px solid rgb(193, 193, 193)"
+                      : "1px solid #dedede80",
+                  }}
                 />
                 <div className="date-icon">
-                  <img src="https://admin.aspiraskillhub.aspirasys.com/images/Calendar.png" alt="Calendar" />
+                  <img
+                    src="https://admin.aspiraskillhub.aspirasys.com/images/Calendar.png"
+                    alt="Calendar"
+                  />
                 </div>
               </div>
             </div>
@@ -292,8 +314,12 @@ function AspirantsView() {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                 readOnly={!isEditing}
-                style={{border: isEditing ? '1px solid rgb(193, 193, 193)' : '1px solid #dedede80'}}
+                readOnly={!isEditing}
+                style={{
+                  border: isEditing
+                    ? "1px solid rgb(193, 193, 193)"
+                    : "1px solid #dedede80",
+                }}
               />
             </div>
             <div className="form-group">
@@ -303,8 +329,12 @@ function AspirantsView() {
                 name="mobile"
                 value={formData.mobile}
                 onChange={handleChange}
-                 readOnly={!isEditing}
-                style={{border: isEditing ? '1px solid rgb(193, 193, 193)' : '1px solid #dedede80'}}
+                readOnly={!isEditing}
+                style={{
+                  border: isEditing
+                    ? "1px solid rgb(193, 193, 193)"
+                    : "1px solid #dedede80",
+                }}
               />
             </div>
             <div className="form-group">
@@ -314,20 +344,26 @@ function AspirantsView() {
                   type="radio"
                   name="gender"
                   value="Male"
+                  id="male"
                   onChange={handleChange}
                   checked={formData.gender === "Male"}
                   disabled={!isEditing}
                 />
-                Male
+                <label className="radioLabel" htmlFor="male">
+                  Male
+                </label>
                 <input
                   type="radio"
                   name="gender"
                   value="Female"
+                  id="female"
                   onChange={handleChange}
                   checked={formData.gender === "Female"}
                   disabled={!isEditing}
                 />
-                Female
+                <label className="radioLabel" htmlFor="female">
+                  Female
+                </label>
               </div>
             </div>
           </div>
@@ -340,10 +376,16 @@ function AspirantsView() {
                 value={formData.techStack}
                 onChange={handleChange}
                 disabled={!isEditing}
-                style={{border: isEditing ? '1px solid rgb(193, 193, 193)' : '1px solid #dedede80'}}
+                style={{
+                  border: isEditing
+                    ? "1px solid rgb(193, 193, 193)"
+                    : "1px solid #dedede80",
+                }}
               >
                 <option value="">Select</option>
-                <option value="Basic Web Technology">Basic Web Technology</option>
+                <option value="Basic Web Technology">
+                  Basic Web Technology
+                </option>
                 <option value="Java">Java</option>
                 <option value="Python">Python</option>
                 <option value="JavaScript">JavaScript</option>
@@ -356,8 +398,12 @@ function AspirantsView() {
                 name="degree"
                 value={formData.degree}
                 onChange={handleChange}
-                 readOnly={!isEditing}
-                style={{border: isEditing ? '1px solid rgb(193, 193, 193)' : '1px solid #dedede80'}}
+                readOnly={!isEditing}
+                style={{
+                  border: isEditing
+                    ? "1px solid rgb(193, 193, 193)"
+                    : "1px solid #dedede80",
+                }}
               />
             </div>
             <div className="form-group">
@@ -367,8 +413,12 @@ function AspirantsView() {
                 name="linkedin"
                 value={formData.linkedin}
                 onChange={handleChange}
-                 readOnly={!isEditing}
-                style={{border: isEditing ? '1px solid rgb(193, 193, 193)' : '1px solid #dedede80'}}
+                readOnly={!isEditing}
+                style={{
+                  border: isEditing
+                    ? "1px solid rgb(193, 193, 193)"
+                    : "1px solid #dedede80",
+                }}
               />
             </div>
           </div>
@@ -381,20 +431,26 @@ function AspirantsView() {
                   type="radio"
                   name="mode"
                   value="On-site"
+                  id="onsite"
                   onChange={handleChange}
                   checked={formData.mode === "On-site"}
                   disabled={!isEditing}
                 />
-                On-site
+                <label className="radioLabel" htmlFor="onsite">
+                  On-site
+                </label>
                 <input
                   type="radio"
                   name="mode"
                   value="Remote"
+                  id="remote"
                   onChange={handleChange}
                   checked={formData.mode === "Remote"}
                   disabled={!isEditing}
                 />
-                Remote
+                <label className="radioLabel" htmlFor="remote">
+                  Remote
+                </label>
               </div>
             </div>
             <div className="form-group">
@@ -404,20 +460,26 @@ function AspirantsView() {
                   type="radio"
                   name="session"
                   value="Full time"
+                  id="fulltime"
                   onChange={handleChange}
                   checked={formData.session}
                   disabled={!isEditing}
                 />
-                Full time
+                <label className="radioLabel" htmlFor="fulltime">
+                  Full time
+                </label>
                 <input
                   type="radio"
                   name="session"
                   value="Part time"
+                  id="parttime"
                   onChange={handleChange}
                   checked={formData.session === "Part time"}
                   disabled={!isEditing}
                 />
-                Part time
+                <label className="radioLabel" htmlFor="parttime">
+                  Part time
+                </label>
               </div>
             </div>
             <div className="form-group">
@@ -427,20 +489,26 @@ function AspirantsView() {
                   type="radio"
                   name="systemFacility"
                   value="Yes"
+                  id="yes"
                   onChange={handleChange}
                   checked={formData.systemFacility === "Yes"}
                   disabled={!isEditing}
                 />
-                Yes
+                <label className="radioLabel" htmlFor="yes">
+                  Yes
+                </label>
                 <input
                   type="radio"
                   name="systemFacility"
                   value="No"
+                  id="no"
                   onChange={handleChange}
                   checked={formData.systemFacility === "No"}
                   disabled={!isEditing}
                 />
-                No
+                <label className="radioLabel" htmlFor="no">
+                  No
+                </label>
               </div>
             </div>
             <div className="form-group">
@@ -450,20 +518,26 @@ function AspirantsView() {
                   type="radio"
                   name="currentlyStudying"
                   value="Yes"
+                  id="yess"
                   onChange={handleChange}
                   checked={formData.currentlyStudying === "Yes"}
                   disabled={!isEditing}
                 />
-                Yes
+                <label className="radioLabel" htmlFor="yess">
+                  Yes
+                </label>
                 <input
                   type="radio"
                   name="currentlyStudying"
                   value="No"
+                  id="nos"
                   onChange={handleChange}
                   checked={formData.currentlyStudying === "No"}
                   disabled={!isEditing}
                 />
-                No
+                <label className="radioLabel" htmlFor="nos">
+                  No
+                </label>
               </div>
             </div>
           </div>
@@ -471,10 +545,18 @@ function AspirantsView() {
           <div className="form-btns">
             {isEditing ? (
               <>
-                <button type="submit" className="accept-btn" onClick={handleSave}>
+                <button
+                  type="submit"
+                  className="accept-btn"
+                  onClick={handleSave}
+                >
                   Save
                 </button>
-                <button type="button" className="reject-btn" onClick={handleCancel}>
+                <button
+                  type="button"
+                  className="reject-btn"
+                  onClick={handleCancel}
+                >
                   Cancel
                 </button>
               </>

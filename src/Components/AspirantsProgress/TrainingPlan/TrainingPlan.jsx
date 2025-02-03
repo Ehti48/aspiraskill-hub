@@ -241,6 +241,8 @@ const TrainingPlan = () => {
   const [students, setStudents] = useState([
     { id: 'ASPT0244', techName: 'Basic Web Tech', name: 'Ibrahim.K', status: '-', },
     { id: 'ASPT0245', techName: 'React JS', name: 'Iqyan', status: '-', },
+    { id: 'ASP0246',  techName: 'Node JS', name: 'Asma', technology: 'Node JS', mode: '-', status: '-', date: '2024-11-05', gender: 'Female' },
+    { id: 'ASP0247',  techName: 'Node JS', name: 'Safwa', technology: 'Node JS', mode: '-', status: '-', date: '2024-10-15' },
   ]);
 
   const [searchQuery, setSearchQuery] = useState('');

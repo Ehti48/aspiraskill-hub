@@ -252,6 +252,7 @@ const MaterialDetail = () => {
   const [students, setStudents] = useState([
     { type: 'Material', techName: 'Basic Web Tech', status: 'In Progress', },
     { type: 'Material', techName: 'React JS', status: 'In Progress', },
+    { type: 'Material', techName: 'Node JS', status: 'In Progress', },
   ]);
 
   const [searchQuery, setSearchQuery] = useState('');
