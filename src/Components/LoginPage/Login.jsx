@@ -169,7 +169,7 @@ const Login = ({ onLogin, onReset }) => {
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
-  const history = useNavigate(); // Initialize useNavigate
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -181,35 +181,23 @@ const Login = ({ onLogin, onReset }) => {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
-      // Proceed with form submission
       try {
-        // Replace this with your actual authentication API call
-        const response = await fakeAuthApi(email, password);
+        const response = await fetch("http://localhost:5050/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
 
-        if (response.success) {
-          onLogin(response.token); // Call the onLogin function with the token
-          history.push('/'); // Redirect to the dashboard
-        } else {
-          setErrors({ ...errors, password: response.message }); // Set error message
-        }
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Login failed.");
+
+        localStorage.setItem("token", data.token);
+        onLogin(data.token);
+        navigate("/");
       } catch (error) {
-        console.error("Login failed:", error);
-        setErrors({ ...errors, password: "Login failed. Please try again." });
+        setErrors({ password: error.message });
       }
     }
-  };
-
-  // Fake authentication API for demonstration purposes
-  const fakeAuthApi = (email, password) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        if (email === "ehtishamulh000@gmail.com" && password === "ehti@123") {
-          resolve({ success: true, token: "fake-jwt-token" });
-        } else {
-          resolve({ success: false, message: "Invalid credentials." });
-        }
-      }, 1000);
-    });
   };
 
   return (
@@ -241,9 +229,7 @@ const Login = ({ onLogin, onReset }) => {
                   onChange={(e) => setEmail(e.target.value)}
                   className={`input-field ${errors.email ? "input-error" : ""}`}
                 />
-                {errors.email && (
-                  <p className="error-message">{errors.email}</p>
-                )}
+                {errors.email && <p className="error-message">{errors.email}</p>}
               </div>
               <div className="form-group">
                 <label htmlFor="password">Password</label>
@@ -252,21 +238,15 @@ const Login = ({ onLogin, onReset }) => {
                     type={showPassword ? "text" : "password"}
                     id="password"
                     placeholder="Password"
-                    className={`password-input ${errors.password ? "input-error" : ""
-                      }`}
+                    className={`password-input ${errors.password ? "input-error" : ""}`}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
-                  <span
-                    className="password-toggle"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
+                  <span className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
                     {showPassword ? <FaEye /> : <FaEyeSlash />}
                   </span>
                 </div>
-                {errors.password && (
-                  <p className="error-message">{errors.password}</p>
-                )}
+                {errors.password && <p className="error-message">{errors.password}</p>}
               </div>
               <div className="forgot-password">
                 <Link onClick={onReset}>Forgot Password?</Link>

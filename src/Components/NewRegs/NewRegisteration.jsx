@@ -5,7 +5,6 @@ import Heading from "../Heading";
 import newRegData from "./NewRegApi";
 
 const Wrapper = styled.section`
-
   /* Container */
   .container {
     width: 96%;
@@ -40,22 +39,22 @@ const Wrapper = styled.section`
     display: flex;
     flex-direction: column;
     position: relative;
-  
+
     padding: 0px;
 
     input,
     select {
-    width: fit-content;
-    height: 40px;
-    background: rgba(249, 249, 249);
-    border-radius: 5px;
-    border: 1px solid #DEDEDE;
-    outline: none;
-    padding: 10px 22px;
-    background: none;
+      width: fit-content;
+      height: 40px;
+      background: rgba(249, 249, 249);
+      border-radius: 5px;
+      border: 1px solid #dedede;
+      outline: none;
+      padding: 10px 22px;
+      background: none;
     }
     label {
-      color: #7A7A7A;
+      color: #7a7a7a;
       font-size: 16px;
       font-weight: 400;
       margin-bottom: 10px;
@@ -77,7 +76,6 @@ const Wrapper = styled.section`
       height: 100%;
     }
   }
-
 
   .filter-btn {
     display: flex;
@@ -113,7 +111,7 @@ const Wrapper = styled.section`
     }
 
     .secondary img {
-        margin-right: 5px;
+      margin-right: 5px;
     }
 
     button {
@@ -188,26 +186,24 @@ const Wrapper = styled.section`
     border-collapse: collapse;
     margin-top: 20px;
     border: 1px solid #ddd;
-
   }
-    
+
   table th,
   table td {
     padding: 10px 20px;
     border: none;
     border-bottom: 1px solid #ddd;
     text-align: left;
-
   }
 
   table th {
     background-color: #ebf3fa;
-    color: #252E4A99;
+    color: #252e4a99;
     font-weight: 500;
     font-size: 14px;
   }
   tbody tr {
-    color: #252E4A;
+    color: #252e4a;
     font-weight: 400;
     font-size: 14px;
   }
@@ -234,14 +230,13 @@ const Wrapper = styled.section`
     z-index: 1;
     display: none;
     flex-direction: row;
-    justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
     box-shadow: 0 0 0 100rem #3b3a3957;
 
     .mail-image {
-      width: 300px;
-      height: 100%;
+      width: 250px;
+      height: 300px;
       background-color: #fff;
       display: flex;
       justify-content: center;
@@ -251,7 +246,7 @@ const Wrapper = styled.section`
       img {
         width: 100%;
         height: 100%;
-        object-fit: contain;
+        object-fit: cover;
       }
     }
 
@@ -266,20 +261,23 @@ const Wrapper = styled.section`
       flex-direction: column;
       text-align: start;
 
-      .mail-head{
+      .mail-head {
         display: flex;
-            flex-direction: row-reverse;
-            align-items: center;
-            width: 100%;
-            margin-bottom: 20px;
-            margin-top: -15px;
+        flex-direction: row-reverse;
+        align-items: center;
+        width: 100%;
+        margin-bottom: 20px;
+        margin-top: -15px;
       }
       h1 {
-        width: 100%;
         text-align: end;
         cursor: pointer;
         font-weight: lighter;
-        color: #333;
+        color: #252e4a99;
+        position: absolute;
+        top: 10px;
+        right: 20px;
+        font-size: 20px;
       }
 
       h2 {
@@ -348,48 +346,48 @@ const Wrapper = styled.section`
     border: 1px solid #ddd;
   }
   .pagination button.active {
-    background-color: #4CAF50;
+    background-color: #4caf50;
     color: white;
   }
   @media (max-width: 1429px) {
-    .mail-popup{
-    justify-content: center;
+    .mail-popup {
+      justify-content: center;
       align-items: center;
     }
-    .mail-popup .mail-image img{
-      display:none;
+    .mail-popup .mail-image {
+      display: none;
     }
   }
   @media (max-width: 1024px) {
-  .aspirant-table {
-    overflow-x: scroll;
-}
-}
+    .aspirant-table {
+      overflow-x: scroll;
+    }
+  }
   @media (max-width: 768px) {
     .form-group {
       flex: 1 1 100%;
     }
-      .new h2 {
-    font-family: sans-serif;
-    font-size: 100%;
-    color: #272f4b;
-}
-.mail-popup .mail-box p  {
-  display:none;
-}
-.mail-popup .mail-box{
-  height: auto;
-}
-  .mail-popup .mail-box .mail-button,.mail-popup .mail-box .mail-input{
-    width:100%;
-    margin-right:0;
-    margin-bottom:12px;
+    .new h2 {
+      font-family: sans-serif;
+      font-size: 100%;
+      color: #272f4b;
+    }
+    .mail-popup .mail-box p {
+      display: none;
+    }
+    .mail-popup .mail-box {
+      height: auto;
+    }
+    .mail-popup .mail-box .mail-button,
+    .mail-popup .mail-box .mail-input {
+      width: 100%;
+      margin-right: 0;
+      margin-bottom: 12px;
+    }
   }
-}
 `;
 
 const NewRegisteration = () => {
-
   const [aspirants, setAspirants] = useState([...newRegData].reverse());
 
   const [search, setSearch] = useState({
@@ -414,7 +412,9 @@ const NewRegisteration = () => {
       return (
         (search.date ? aspirant.date.includes(search.date) : true) &&
         (search.fullName
-          ? aspirant.fullName.toLowerCase().includes(search.fullName.toLowerCase())
+          ? aspirant.fullName
+              .toLowerCase()
+              .includes(search.fullName.toLowerCase())
           : true) &&
         (search.mode ? aspirant.mode === search.mode : true) &&
         (search.session ? aspirant.session === search.session : true) &&
@@ -434,7 +434,9 @@ const NewRegisteration = () => {
       session: "",
       status: "",
     });
-    document.querySelectorAll(".filter-group input").forEach((input) => (input.value = ""));
+    document
+      .querySelectorAll(".filter-group input")
+      .forEach((input) => (input.value = ""));
     setFilteredAspirants(aspirants);
     setCurrentPage(1);
   };
@@ -449,7 +451,10 @@ const NewRegisteration = () => {
 
   const indexOfLastAspirant = currentPage * aspirantsPerPage;
   const indexOfFirstAspirant = indexOfLastAspirant - aspirantsPerPage;
-  const currentAspirants = filteredAspirants.slice(indexOfFirstAspirant, indexOfLastAspirant);
+  const currentAspirants = filteredAspirants.slice(
+    indexOfFirstAspirant,
+    indexOfLastAspirant
+  );
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
@@ -466,7 +471,10 @@ const NewRegisteration = () => {
               onChange={handleSearchChange}
             />
             <div className="date-icon">
-              <img src="https://admin.aspiraskillhub.aspirasys.com/images/Calendar.png" alt="Calendar" />
+              <img
+                src="https://admin.aspiraskillhub.aspirasys.com/images/Calendar.png"
+                alt="Calendar"
+              />
             </div>
           </div>
           <div className="filter-group">
@@ -516,15 +524,21 @@ const NewRegisteration = () => {
             </select>
           </div>
           <div className="filter-btn">
-            <button type="button" className="primary" onClick={handleSearchClick}>
-              <img src="https://admin.aspiraskillhub.aspirasys.com/images/search.png" alt="" />
-            </button>
             <button
               type="button"
-              className="secondary"
-              onClick={handleReset}
+              className="primary"
+              onClick={handleSearchClick}
             >
-              <img src="https://admin.aspiraskillhub.aspirasys.com/images/rotate-left.png" alt="" />
+              <img
+                src="https://admin.aspiraskillhub.aspirasys.com/images/search.png"
+                alt=""
+              />
+            </button>
+            <button type="button" className="secondary" onClick={handleReset}>
+              <img
+                src="https://admin.aspiraskillhub.aspirasys.com/images/rotate-left.png"
+                alt=""
+              />
               Reset
             </button>
           </div>
@@ -537,12 +551,15 @@ const NewRegisteration = () => {
         </div>
         <div className="mail-popup">
           <div className="mail-image">
-            <img src="/src/assets/mailpost.jpg" alt="Mail Illustration" />
+            <img
+              src="https://plus.unsplash.com/premium_photo-1671599016130-7882dbff302f?q=80&w=1887&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+              alt="Mail Illustration"
+            />
           </div>
           <div className="mail-box">
             <div className="mail-head">
               <h1 id="mail-close" onClick={handleCloseMail}>
-                X
+                ✖
               </h1>
               <h2>Add New Aspirants</h2>
             </div>
@@ -592,7 +609,10 @@ const NewRegisteration = () => {
                           to="/admin/new-registration/aspirants-view"
                           state={{ aspirant }}
                         >
-                          <img src="https://admin.aspiraskillhub.aspirasys.com/images/export-pro.png" alt="View Aspirant" />
+                          <img
+                            src="https://admin.aspiraskillhub.aspirasys.com/images/export-pro.png"
+                            alt="View Aspirant"
+                          />
                         </Link>
                       </button>
                     </td>
@@ -600,23 +620,53 @@ const NewRegisteration = () => {
                 ))
               ) : (
                 <tr>
-                  <td style={{ textAlign: 'center' }} colSpan="7">No data available in the table.</td>
+                  <td style={{ textAlign: "center" }} colSpan="7">
+                    No data available in the table.
+                  </td>
                 </tr>
               )}
             </tbody>
           </table>
-          <div className="pagination" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', margin: '20px 0 0 0' }}>
+          <div
+            className="pagination"
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              alignItems: "center",
+              margin: "20px 0 0 0",
+            }}
+          >
             <button
               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
+              style={{
+                padding: "8px 15px",
+                border: "none",
+                borderRadius: "5px",
+                backgroundColor: "#3282c4",
+                color: "white",
+                cursor: "pointer",
+              }}
               disabled={currentPage === 1}
             >
               Prev
             </button>
-            <span style={{ margin: '0 10px' }}>Page {currentPage} of {Math.ceil(aspirants.length / 10)}</span>
+            <span style={{ margin: "0 10px" }}>
+              Page {currentPage} of {Math.ceil(aspirants.length / 10)}
+            </span>
             <button
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, Math.ceil(aspirants.length / 10)))}
-              style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
+              onClick={() =>
+                setCurrentPage((prev) =>
+                  Math.min(prev + 1, Math.ceil(aspirants.length / 10))
+                )
+              }
+              style={{
+                padding: "8px 15px",
+                border: "none",
+                borderRadius: "5px",
+                backgroundColor: "#3282c4",
+                color: "white",
+                cursor: "pointer",
+              }}
               disabled={currentPage === Math.ceil(aspirants.length / 10)}
             >
               Next

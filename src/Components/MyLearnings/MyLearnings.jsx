@@ -207,6 +207,16 @@ const Wrapper = styled.section`
       font-weight: 600;
       border-radius: 8px;
       text-align: center;
+      position: relative;
+
+      .close-icon {
+        position: absolute;
+        top: 10px;
+        right: 20px;
+        color: #666;
+        font-weight: 500;
+        cursor: pointer;
+      }
     }
     .message {
       margin: 16px 0 10px;
@@ -381,6 +391,7 @@ const MyLearnings = () => {
   const ConfirmationModal = ({ onConfirm, onCancel }) => (
     <div className='modalOverlay'>
       <div className='modalContent'>
+        <div className="close-icon" onClick={onCancel}>✖</div>
         <div className="del-icon">
           <img src="https://admin.aspiraskillhub.aspirasys.com/images/mdi_trash.png" alt="delete" />
         </div>

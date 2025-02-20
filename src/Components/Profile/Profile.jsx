@@ -422,9 +422,9 @@ const Profile = () => {
   // State to manage the General section form
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    firstName: "Himmad",
-    lastName: "Ameen",
-    fullName: "Himmad Ameen",
+    firstName: "Ehtishamul",
+    lastName: "Haque",
+    fullName: "Ehtishamul Haque",
   });
   const [originalData, setOriginalData] = useState({ ...formData });
 

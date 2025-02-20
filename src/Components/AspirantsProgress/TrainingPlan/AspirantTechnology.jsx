@@ -374,6 +374,13 @@ const Wrapper = styled.section`
     margin-top: -10px;
   }
 
+  .pagination {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+  }
+
 
   @media (min-width: 1350px) {
     .odd {
@@ -394,11 +401,11 @@ const AspirantTecnology = () => {
   const [students, setStudents] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newTech, setNewTech] = useState({
-  });
+  const [newTech, setNewTech] = useState({});
   const [deleteIndex, setDeleteIndex] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [techIdError, setTechIdError] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
 
   const location = useLocation();
   const studentId = location.state?.studentId;
@@ -418,6 +425,7 @@ const AspirantTecnology = () => {
     'Digital Marketing': { techId: 'ASPT0009', stages: '3', projects: '8', materials: '80' },
     'Flutter': { techId: 'ASPT0010', stages: '4', projects: '12', materials: '120' },
   };
+
 
 
   const handleSearchChange = (e) => setSearchQuery(e.target.value);
@@ -481,6 +489,11 @@ const AspirantTecnology = () => {
   const filteredStudents = students.filter(
     (tech) => tech.techId || tech.techName
   );
+
+  const pages = Math.ceil(filteredStudents.length / 10);
+  const start = (currentPage - 1) * 10;
+  const end = start + 10;
+  const paginatedTechStacks = filteredStudents.slice(start, end);
 
   return (
     <Wrapper>
@@ -550,7 +563,7 @@ const AspirantTecnology = () => {
               <button onClick={() => setIsDeleteModalOpen(false)}>✖</button>
             </div>
             <div class="del-icon">
-              <img src="https://admin.aspiraskillhub.aspirasys.com/images/mdi_trash.png" alt="delete"/>
+              <img src="https://admin.aspiraskillhub.aspirasys.com/images/mdi_trash.png" alt="delete" />
             </div>
             <p>Are you sure?</p>
             <span>To delete {students[deleteIndex]?.techName || 'this technology'}?</span>
@@ -614,9 +627,9 @@ const AspirantTecnology = () => {
                 </thead>
                 <tbody>
                   {filteredStudents.length > 0 ? (
-                    filteredStudents.map((student, index) => (
+                    paginatedTechStacks.map((student, index) => (
                       <tr className="odd" key={index}>
-                        <td className="num">{index + 1}</td>
+                        <td className="num">{(currentPage - 1) * 10 + index + 1}</td>
                         <td>{student.techId}</td>
                         <td>{student.techName}</td>
                         <td>{student.stages}</td>
@@ -656,6 +669,23 @@ const AspirantTecnology = () => {
             </div>
           </div>
         </div>
+      <div className="pagination">
+        <Button
+          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+          style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
+          disabled={currentPage === 1}
+        >
+          Prev
+        </Button>
+        <span style={{ margin: '0 10px' }}>Page {currentPage} of {pages}</span>
+        <Button
+          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pages))}
+          style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
+          disabled={currentPage === pages}
+        >
+          Next
+        </Button>
+      </div>
       </div>
     </Wrapper>
   );

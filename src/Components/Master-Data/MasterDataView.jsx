@@ -332,8 +332,12 @@ const Wrapper = styled.section`
 
     .profile-left,
     .profile-right {
-      max-width: 100%;
+      width: 100%;
     }
+
+    .about-section .para {
+      margin-top: 10px !important; 
+    } 
   }
 `;
 const MasterDataView = () => {
@@ -345,7 +349,7 @@ const MasterDataView = () => {
     name: aspirant?.name,
     role: aspirant?.technology,
     employment: "Full time (On-site)",
-    gender: "Male",
+    gender: aspirant.gender,
     dob: "1999-12-25",
     fatherName: "Irshad Ahmed V T",
     education: "BE - Mechanical",

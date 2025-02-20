@@ -19,10 +19,26 @@ const ModalContent = styled.div`
   border-radius: 8px;
   width: 90%;
   max-width: 830px;
-  height: 520px;
+  height: 550px;
   padding: 25px 30px 30px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   position: relative;
+
+   .header {
+      h2 {
+        margin-bottom: 0px !important;
+      }
+
+      .close-icon {
+      position: absolute;
+      top: 15px;
+      right: 25px;
+      font-size: 20px;
+      font-weight: 500;
+      color: #252e4a99;
+      cursor: pointer;
+      }
+    }
 `;
 
 const Title = styled.h2`
@@ -146,7 +162,6 @@ const Form = styled.form`
 
 const ButtonGroup = styled.div`
     width: 100%;
-    margin-top: 10px;
     display: flex;
     justify-content: flex-end;
     gap: 10px;
@@ -252,7 +267,10 @@ const EditModal = ({ isOpen, onClose, techStack, onSave, existingIds }) => {
     isOpen && (
       <ModalWrapper>
         <ModalContent>
+          <div className="header">
           <Title>{techStack ? 'Edit Tech Stack' : 'Add Tech Stack'}</Title>
+          <div className="close-icon" onClick={onClose}>✖</div>
+          </div>
           <Form>
             <div className="input-cont">
               <div className="input-group">

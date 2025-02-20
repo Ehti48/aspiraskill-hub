@@ -360,6 +360,12 @@ const Wrapper = styled.section`
     color: #0078d7;
     text-decoration: none;
   }
+      .pagination {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+  }
 
   @media (max-width: 650px) {
     .user-timesheet {
@@ -403,9 +409,20 @@ const TimesheetDetail = () => {
     { date: '2024-11-01', activity: 'Permission', description: '-', hours: '04', link: '-' },
     { date: '2024-12-01', activity: 'Productive Effort', description: '-', hours: '08', link: '-' },
     { date: '2024-12-07', activity: 'Leave', description: '-', hours: '08', link: '-' },
+    { date: '2024-01-01', activity: 'Meeting', description: '-', hours: '04', link: '-' },
+    { date: '2024-02-01', activity: 'Training', description: '-', hours: '08', link: '-' },
+    { date: '2024-03-01', activity: 'Support', description: '-', hours: '02', link: '-' },
+    { date: '2024-04-01', activity: 'Permission', description: '-', hours: '04', link: '-' },
+    { date: '2024-05-01', activity: 'Productive Effort', description: '-', hours: '08', link: '-' },
+    { date: '2024-06-01', activity: 'Leave', description: '-', hours: '08', link: '-' },
+    { date: '2024-07-01', activity: 'System/Power issue', description: '-', hours: '02', link: '-' },
+    { date: '2024-08-01', activity: 'Permission', description: '-', hours: '04', link: '-' },
+    { date: '2024-09-01', activity: 'Productive Effort', description: '-', hours: '08', link: '-' },
+    { date: '2024-10-01', activity: 'Meeting', description: '-', hours: '04', link: '-' },
   ]);
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFrom, setDateFrom] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [dateTo, setDateTo] = useState('');
   const [category, setCategory] = useState('');
   const [month, setMonth] = useState('');
@@ -457,6 +474,11 @@ const TimesheetDetail = () => {
     setFilteredStudents(filteredData); // Set filtered students after search input change
   };
 
+  const pages = Math.ceil(filteredStudents.length / 10);
+  const start = (currentPage - 1) * 10;
+  const end = start + 10;
+  const paginatedTechStacks = filteredStudents.slice(start, end);
+
   return (
     <Wrapper>
       <div className="user-timesheet">
@@ -465,9 +487,9 @@ const TimesheetDetail = () => {
             <li className="breadcrumb-item">
               <Link to="/admin/aspirants-progress">Timesheet</Link>
             </li>
-              <MdKeyboardArrowRight />
+            <MdKeyboardArrowRight />
             <li className="breadcrumb-item active" aria-current="page">
-               {studentId}
+              {studentId}
             </li>
           </ol>
         </nav>
@@ -594,27 +616,44 @@ const TimesheetDetail = () => {
                   </tr>
                 </thead>
                 <tbody>
-                {filteredStudents.length > 0 ? (
-                  filteredStudents.map((student, index) => (
-                    <tr className="odd" key={index}>
-                      <td>{index + 1}</td>
-                      <td>{student.date}</td>
-                      <td>{student.activity}</td>
-                      <td>{student.description}</td>
-                      <td>{student.hours}</td>
-                      <td>{student.link}</td>
+                  {filteredStudents.length > 0 ? (
+                    paginatedTechStacks.map((student, index) => (
+                      <tr className="odd" key={index}>
+                        <td>{(currentPage - 1) * 10 + index + 1}</td>
+                        <td>{student.date}</td>
+                        <td>{student.activity}</td>
+                        <td>{student.description}</td>
+                        <td>{student.hours}</td>
+                        <td>{student.link}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr className='odd odd2'>
+                      <td colSpan="7"> No data available in the table</td>
                     </tr>
-                  ))
-                ) : (
-                  <tr className='odd odd2'>
-                    <td colSpan="7"> No data available in the table</td>
-                  </tr>
                   )}
                 </tbody>
               </table>
             </div>
           </div>
         </div>
+      <div className="pagination">
+        <Button
+          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+          style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
+          disabled={currentPage === 1}
+        >
+          Prev
+        </Button>
+        <span style={{ margin: '0 10px' }}>Page {currentPage} of {pages}</span>
+        <Button
+          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pages))}
+          style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
+          disabled={currentPage === pages}
+        >
+          Next
+        </Button>
+      </div>
       </div>
     </Wrapper>
   );

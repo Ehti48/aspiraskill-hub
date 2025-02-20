@@ -1,6 +1,7 @@
-import React, { useState } from "react";
-import styled from "styled-components";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import styled from "styled-components";
+import axios from 'axios';
 
 const Wrapper = styled.section`
   Wrapper {
@@ -300,93 +301,36 @@ const Wrapper = styled.section`
   }
 `;
 
-const aspirants = [
-  {
-    id: "AS0101",
-    name: "Himad Ameen T I",
-    gender: "Male",
-    technology: "React JS",
-    status: "Hired",
-    about:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolorum eum at facilis deleniti maxime ducimus nulla est quibusdam perspiciatis eaque! Corrupti voluptate modi dignissimos sunt earum a rerum magnam aliquam ab minus natus qui molestiae consectetur porro.",
-    joiningDate: "2023-01-01",
-    endDate: "2023-01-31",
-    phone: "9876543210",
-    email: "himad@gmail.com",
-    location: "Bangalore",
-    altPhone: "1234567890",
-  },
-  {
-    id: "AS0102",
-    name: "Raiyan Azami K",
-    gender: "Male",
-    technology: "Node JS",
-    status: "Hired",
-    about:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolorum eum at facilis deleniti maxime ducimus nulla est quibusdam perspiciatis eaque! Corrupti voluptate modi dignissimos sunt earum a rerum magnam aliquam ab minus natus qui molestiae consectetur porro.",
-    joiningDate: "2023-01-01",
-    endDate: "2023-01-31",
-    phone: "7890123456",
-    email: "raiyan@gmail.com",
-    location: "Bangalore",
-    altPhone: "1234567890",
-  },
-  {
-    id: "AS0103",
-    name: "Mohammed Zaib N",
-    gender: "Male",
-    technology: "Angular JS",
-    status: "Hired",
-    about:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolorum eum at facilis deleniti maxime ducimus nulla est quibusdam perspiciatis eaque! Corrupti voluptate modi dignissimos sunt earum a rerum magnam aliquam ab minus natus qui molestiae consectetur porro.",
-    joiningDate: "2023-01-01",
-    endDate: "2023-01-31",
-    phone: "5678901234",
-    email: "zaib@gmail.com",
-    location: "Bangalore",
-    altPhone: "1234567890",
-  },
-  {
-    id: "AS0104",
-    name: "Asim Jamal V M",
-    gender: "Male",
-    technology: "Vue JS",
-    status: "Hired",
-    about:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolorum eum at facilis deleniti maxime ducimus nulla est quibusdam perspiciatis eaque! Corrupti voluptate modi dignissimos sunt earum a rerum magnam aliquam ab minus natus qui molestiae consectetur porro.",
-    joiningDate: "2023-01-01",
-    endDate: "2023-01-31",
-    phone: "9012345678",
-    email: "asim@gmail.com",
-    location: "Bangalore",
-    altPhone: "1234567890",
-  },
-  {
-    id: "AS0105",
-    name: "Ainul Marliya",
-    gender: "Female",
-    technology: "Vue JS",
-    status: "Hired",
-    about:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolorum eum at facilis deleniti maxime ducimus nulla est quibusdam perspiciatis eaque! Corrupti voluptate modi dignissimos sunt earum a rerum magnam aliquam ab minus natus qui molestiae consectetur porro.",
-    joiningDate: "2023-01-01",
-    endDate: "2023-01-31",
-    phone: "9012345678",
-    email: "ainul@gmail.com",
-    location: "ambur",
-    altPhone: "1234567890",
-  },
-  // Add more data here as needed
-];
-
 function MasterData() {
+  const [aspirants, setAspirants] = useState([]); // ✅ Fix: Initialize as an empty array
   const [filters, setFilters] = useState({
     name: "",
     gender: "",
     technology: "",
     status: "",
   });
-  const [filteredAspirants, setFilteredAspirants] = useState(aspirants);
+  const [filteredAspirants, setFilteredAspirants] = useState([]);
+
+  // Fetch data from API when component mounts
+  useEffect(() => {
+    const fetchAspirants = async () => {
+      try {
+        const response = await axios.get("http://localhost:4000/api/v1/data/getall");
+        console.log("API Response:", response.data); // ✅ Debug API response
+        const data = response.data.data || []; // ✅ Ensure it's an array
+        // console.log("Formatted Data:", data);
+        setAspirants(data);
+        setFilteredAspirants(data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+  
+    fetchAspirants();
+  }, []);
+  
+
+  console.log("Aspirants State:", aspirants); // ✅ Debugging before rendering
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
@@ -394,26 +338,28 @@ function MasterData() {
   };
 
   const applyFilters = () => {
+    if (!Array.isArray(aspirants)) return;
+
     let filtered = aspirants;
 
-    filters.name
-      ? (filtered = filtered.filter((aspirant) =>
-          aspirant.name.toLowerCase().includes(filters.name.toLowerCase())
-        ))
-      : filters.gender
-      ? (filtered = filtered.filter(
-          (aspirant) => aspirant.gender === filters.gender
-        ))
-      : filters.technology
-      ? (filtered = filtered.filter(
-          (aspirant) => aspirant.technology === filters.technology
-        ))
-      : (filtered = filtered.filter(
-          (aspirant) => aspirant.status === filters.status
-        ));
+    if (filters.name) {
+      filtered = filtered.filter((aspirant) =>
+        aspirant.name?.toLowerCase().includes(filters.name.toLowerCase()) // ✅ Safe check
+      );
+    }
+    if (filters.gender) {
+      filtered = filtered.filter((aspirant) => aspirant.gender?.toLowerCase() === filters.gender.toLowerCase());
+    }
+    if (filters.technology) {
+      filtered = filtered.filter((aspirant) => aspirant.technology?.toLowerCase() === filters.technology.toLowerCase());
+    }
+    if (filters.status) {
+      filtered = filtered.filter((aspirant) => aspirant.status?.toLowerCase() === filters.status.toLowerCase());
+    }
 
     setFilteredAspirants(filtered);
   };
+
 
   const resetFilters = () => {
     setFilters({ name: "", gender: "", technology: "", status: "" });
@@ -426,10 +372,7 @@ function MasterData() {
         <header className="stats">
           <div className="stat-card total">
             <div className="status-img">
-              <img
-                src="https://admin.aspiraskillhub.aspirasys.com/images/master-group.png"
-                alt=""
-              />
+              <img src="https://admin.aspiraskillhub.aspirasys.com/images/master-group.png" alt="" />
             </div>
             <div className="status-content">
               <h3>Total Aspirants</h3>
@@ -438,10 +381,7 @@ function MasterData() {
           </div>
           <div className="stat-card hired">
             <div className="status-img hired-img">
-              <img
-                src="https://admin.aspiraskillhub.aspirasys.com/images/directbox-notif.png"
-                alt=""
-              />
+              <img src="https://admin.aspiraskillhub.aspirasys.com/images/directbox-notif.png" alt="" />
             </div>
             <div className="status-content">
               <h3>Hired</h3>
@@ -450,24 +390,16 @@ function MasterData() {
           </div>
           <div className="stat-card progress">
             <div className="status-img progress-img">
-              <img
-                src="https://admin.aspiraskillhub.aspirasys.com/images/health.png"
-                alt=""
-              />
+              <img src="https://admin.aspiraskillhub.aspirasys.com/images/health.png" alt="" />
             </div>
             <div className="status-content">
               <h3>In Progress</h3>
-              <p>
-                {aspirants.filter((a) => a.status === "In Progress").length}
-              </p>
+              <p>{aspirants.filter((a) => a.status === "In Progress").length}</p>
             </div>
           </div>
           <div className="stat-card terminated">
             <div className="status-img terminated-img">
-              <img
-                src="https://admin.aspiraskillhub.aspirasys.com/images/clipboard-close.png"
-                alt=""
-              />
+              <img src="https://admin.aspiraskillhub.aspirasys.com/images/clipboard-close.png" alt="" />
             </div>
             <div className="status-content">
               <h3>Terminated</h3>
@@ -476,10 +408,7 @@ function MasterData() {
           </div>
           <div className="stat-card job-ready">
             <div className="status-img job-ready-img">
-              <img
-                src="https://admin.aspiraskillhub.aspirasys.com/images/briefcase.png"
-                alt=""
-              />
+              <img src="https://admin.aspiraskillhub.aspirasys.com/images/briefcase.png" alt="" />
             </div>
             <div className="status-content">
               <h3>Job Ready</h3>
@@ -487,65 +416,27 @@ function MasterData() {
             </div>
           </div>
         </header>
-        <div className="success-rate">
-          <h2>Aspirant Data</h2>
-          <p>
-            Successful Rate{" "}
-            <span>
-              80%{" "}
-              <img src="https://admin.aspiraskillhub.aspirasys.com/images/Arrow - Up Square.svg"></img>
-            </span>
-          </p>
-        </div>
+
         <section className="aspirant-data">
           <div className="filters">
-            <div className="filters-input">
-              <label htmlFor="name"> Name</label>
-              <input
-                type="text"
-                name="name"
-                value={filters.name}
-                onChange={handleFilterChange}
-              />
-            </div>
-            <div className="filters-input">
-              <label htmlFor="gender">Gender</label>
-              <select
-                name="gender"
-                value={filters.gender}
-                onChange={handleFilterChange}
-              >
-                <option value="">Select Gender</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other"> Other</option>
-              </select>
-            </div>
-            <div className="filters-input">
-              <label htmlFor="technology">Technology</label>
-              <select
-                name="technology"
-                value={filters.technology}
-                onChange={handleFilterChange}
-              >
-                <option value="">Select Technology</option>
-                <option value="React">React</option>
-                <option value="Node">Node</option>
-              </select>
-            </div>
-            <div className="filters-input">
-              <label htmlFor="status">Status</label>
-              <select
-                name="status"
-                value={filters.status}
-                onChange={handleFilterChange}
-              >
-                <option value="">Select Status</option>
-                <option value="Hired">Hired</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Terminated">Terminated</option>
-              </select>
-            </div>
+            <input type="text" name="name" placeholder="Name" value={filters.name} onChange={handleFilterChange} />
+            <select name="gender" value={filters.gender} onChange={handleFilterChange}>
+              <option value="">Select Gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+            <select name="technology" value={filters.technology} onChange={handleFilterChange}>
+              <option value="">Select Technology</option>
+              <option value="React">React</option>
+              <option value="Node">Node</option>
+            </select>
+            <select name="status" value={filters.status} onChange={handleFilterChange}>
+              <option value="">Select Status</option>
+              <option value="Hired">Hired</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Terminated">Terminated</option>
+            </select>
             <div className="filter-btn">
               <button className="primary" onClick={applyFilters}>
                 <img
@@ -564,46 +455,47 @@ function MasterData() {
               </button>
             </div>
           </div>
-          <div className="masterdata-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Aspira ID</th>
-                  <th>Name</th>
-                  <th>Gender</th>
-                  <th>Technology</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredAspirants.map((aspirant, index) => (
+
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Aspira ID</th>
+                <th>Name</th>
+                <th>Gender</th>
+                <th>Technology</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredAspirants.length > 0 ? (
+                filteredAspirants.map((aspirant, index) => (
                   <tr key={aspirant.id}>
                     <td>{index + 1}</td>
                     <td>{aspirant.id}</td>
                     <td>{aspirant.name}</td>
                     <td>{aspirant.gender}</td>
                     <td>{aspirant.technology}</td>
-                    <td
-                      className={`status ${aspirant.status
-                        .toLowerCase()
-                        .replace(" ", "-")}`}
-                    >
-                      {aspirant.status}
+                    <td className={`status ${aspirant.status?.toLowerCase().replace(" ", "-") || ""}`}>
+                      {aspirant.status || "N/A"}
                     </td>
                     <td>
-                      <button className="action-btn">
-                        <Link to="/admin/master-data/view" state={{ aspirant }}>
-                          <img src="https://admin.aspiraskillhub.aspirasys.com/images/export-pro.png" />
-                        </Link>
-                      </button>
+                      <Link to="/admin/master-data/view" state={{ aspirant }}>
+                        <img src="https://admin.aspiraskillhub.aspirasys.com/images/export-pro.png" alt="View" />
+                      </Link>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="7" className="no-data" style={{ textAlign: "center" }}>
+                    No data available
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </section>
       </div>
     </Wrapper>

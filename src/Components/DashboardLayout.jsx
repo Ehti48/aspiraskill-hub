@@ -558,7 +558,7 @@ const DashboardLayout = ({ onLogout }) => {
                                 </div>
                                 <div className="user-name">
                                     <h2>Admin</h2>
-                                    <Heading title='Himad Ameen' />
+                                    <Heading title='Ehtishamul Haque' />
                                 </div>
                                 <img className='arrow-img' src="https://admin.aspiraskillhub.aspirasys.com/images/arrowdown.png" alt="" />
                             </div>

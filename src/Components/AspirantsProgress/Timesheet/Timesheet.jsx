@@ -247,6 +247,13 @@ const Wrapper = styled.section`
     text-decoration: underline;
   }
 
+  .pagination {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+  }
+
   @media screen and (max-width: 500px) {
     .header {
       margin: 10px auto;
@@ -262,11 +269,21 @@ const Timesheet = () => {
     { id: 'ASP0245', name: 'Iqhyan', technology: 'React JS', mode: '-', status: '-', date: '2024-10-15', gender: 'Male' },
     { id: 'ASP0246', name: 'Asma', technology: 'Node JS', mode: '-', status: '-', date: '2024-11-05', gender: 'Female' },
     { id: 'ASP0247', name: 'Safwa', technology: 'Node JS', mode: '-', status: '-', date: '2024-10-15', gender: 'Female' },
+    { id: 'ASP0248', name: 'Ali', technology: 'Python', mode: '-', status: '-', date: '2024-10-20', gender: 'Male' },
+    { id: 'ASP0249', name: 'Fatima', technology: 'Java', mode: '-', status: '-', date: '2024-10-22', gender: 'Female' },
+    { id: 'ASP0250', name: 'Omar', technology: 'Angular', mode: '-', status: '-', date: '2024-11-01', gender: 'Male' },
+    { id: 'ASP0251', name: 'Zara', technology: 'Vue JS', mode: '-', status: '-', date: '2024-11-11', gender: 'Female' },
+    { id: 'ASP0252', name: 'Ahmed', technology: 'Django', mode: '-', status: '-', date: '2024-10-25', gender: 'Male' },
+    { id: 'ASP0253', name: 'Aisha', technology: 'Ruby on Rails', mode: '-', status: '-', date: '2024-11-15', gender: 'Female' },
+    { id: 'ASP0254', name: 'Yusuf', technology: 'C#', mode: '-', status: '-', date: '2024-10-30', gender: 'Male' },
+    { id: 'ASP0255', name: 'Maryam', technology: 'PHP', mode: '-', status: '-', date: '2024-11-03', gender: 'Female' },
+    { id: 'ASP0256', name: 'Hassan', technology: 'Swift', mode: '-', status: '-', date: '2024-10-28', gender: 'Male' },
+    { id: 'ASP0257', name: 'Layla', technology: 'Kotlin', mode: '-', status: '-', date: '2024-11-08', gender: 'Female' },
   ]);
 
   const [filteredStudents, setFilteredStudents] = useState(students); // Store filtered students
   const [searchQuery, setSearchQuery] = useState('');
-
+  const [currentPage, setCurrentPage] = useState(1);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('');
@@ -321,6 +338,11 @@ const Timesheet = () => {
     );
     setFilteredStudents(filtered);
   };
+
+  const pages = Math.ceil(filteredStudents.length / 10);
+  const start = (currentPage - 1) * 10;
+  const end = start + 10;
+  const paginatedTechStacks = filteredStudents.slice(start, end);
 
 
   return (
@@ -467,26 +489,26 @@ const Timesheet = () => {
               </thead>
               <tbody>
                 {filteredStudents.length > 0 ? (
-                  filteredStudents.map((student, index) => (
+                  paginatedTechStacks.map((student, index) => (
                     <tr className="odd" key={index}>
-                      <td>{index + 1}</td>
+                      <td>{(currentPage - 1) * 10 + index + 1}</td>
                       <td>{student.id}</td>
                       <td>{student.name}</td>
                       <td>{student.technology}</td>
                       <td>{student.mode}</td>
                       <td>{student.status}</td>
                       <td className="stack-output">
-                        <NavLink 
-                        to='/admin/aspirants-progress/timesheet-detail'
-                        state={{ studentId: student.id,  studentName: student.name}}
+                        <NavLink
+                          to='/admin/aspirants-progress/timesheet-detail'
+                          state={{ studentId: student.id, studentName: student.name }}
                         >
                           <button>
                             <img src="https://admin.aspiraskillhub.aspirasys.com/images/eye.png" alt="View" />
                           </button>
                         </NavLink>
-                        <NavLink 
-                        to='/admin/aspirants-progress/productive-students'
-                        state={{ studentId: student.id,  studentName: student.name}}
+                        <NavLink
+                          to='/admin/aspirants-progress/productive-students'
+                          state={{ studentId: student.id, studentName: student.name }}
                         >
                           <button className="btn re-submit">
                             <span>
@@ -507,6 +529,23 @@ const Timesheet = () => {
             </table>
           </div>
         </div>
+      </div>
+      <div className="pagination">
+        <Button
+          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+          style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
+          disabled={currentPage === 1}
+        >
+          Prev
+        </Button>
+        <span style={{ margin: '0 10px' }}>Page {currentPage} of {pages}</span>
+        <Button
+          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pages))}
+          style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
+          disabled={currentPage === pages}
+        >
+          Next
+        </Button>
       </div>
     </Wrapper>
   );

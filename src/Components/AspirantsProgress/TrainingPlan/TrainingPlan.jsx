@@ -227,6 +227,13 @@ const Wrapper = styled.section`
     text-decoration: none;
   }
 
+  .pagination {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+  }
+
   @media only screen and (max-width: 450px) {
     .header {
       margin: 10px auto !important;
@@ -241,11 +248,22 @@ const TrainingPlan = () => {
   const [students, setStudents] = useState([
     { id: 'ASPT0244', techName: 'Basic Web Tech', name: 'Ibrahim.K', status: '-', },
     { id: 'ASPT0245', techName: 'React JS', name: 'Iqyan', status: '-', },
-    { id: 'ASP0246',  techName: 'Node JS', name: 'Asma', technology: 'Node JS', mode: '-', status: '-', date: '2024-11-05', gender: 'Female' },
-    { id: 'ASP0247',  techName: 'Node JS', name: 'Safwa', technology: 'Node JS', mode: '-', status: '-', date: '2024-10-15' },
+    { id: 'ASP0246', techName: 'Node JS', name: 'Asma', technology: 'Node JS', mode: '-', status: '-', date: '2024-11-05', gender: 'Female' },
+    { id: 'ASP0247', techName: 'Node JS', name: 'Safwa', technology: 'Node JS', mode: '-', status: '-', date: '2024-10-15' },
+    { id: 'ASP0248', techName: 'Node JS', name: 'Lina', technology: 'Node JS', mode: '-', status: '-', date: '2024-10-01' },
+    { id: 'ASP0249', techName: 'Node JS', name: 'Sami', technology: 'Node JS', mode: '-', status: '-', date: '2024-10-02' },
+    { id: 'ASP0250', techName: 'Node JS', name: 'Amin', technology: 'Node JS', mode: '-', status: '-', date: '2024-10-03' },
+    { id: 'ASP0251', techName: 'Node JS', name: 'Ahmed', technology: 'Node JS', mode: '-', status: '-', date: '2024-10-04' },
+    { id: 'ASP0252', techName: 'Node JS', name: 'Mansour', technology: 'Node JS', mode: '-', status: '-', date: '2024-10-05' },
+    { id: 'ASP0253', techName: 'Node JS', name: 'Nabil', technology: 'Node JS', mode: '-', status: '-', date: '2024-10-06' },
+    { id: 'ASP0254', techName: 'Node JS', name: 'Saud', technology: 'Node JS', mode: '-', status: '-', date: '2024-10-07' },
+    { id: 'ASP0255', techName: 'Node JS', name: 'Abdullah', technology: 'Node JS', mode: '-', status: '-', date: '2024-10-08' },
+    { id: 'ASP0256', techName: 'Node JS', name: 'Hassan', technology: 'Node JS', mode: '-', status: '-', date: '2024-10-09' },
+    { id: 'ASP0257', techName: 'Node JS', name: 'Ali', technology: 'Node JS', mode: '-', status: '-', date: '2024-10-10' },
   ]);
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
 
   const handleSearchChange = (e) => setSearchQuery(e.target.value);
 
@@ -254,6 +272,11 @@ const TrainingPlan = () => {
       student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       student.id.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const pages = Math.ceil(filteredStudents.length / 10);
+  const start = (currentPage - 1) * 10;
+  const end = start + 10;
+  const paginatedTechStacks = filteredStudents.slice(start, end);
 
   return (
     <Wrapper>
@@ -275,54 +298,69 @@ const TrainingPlan = () => {
               </Button>
             </div>
             <div className="tab">
-            <table className="tab-cols">
-              <thead>
-                <tr className="odd odd1">
-                  <td>#</td>
-                  <td>Aspira ID</td>
-                  <td>Technology Name</td>
-                  <td>Name</td>
-                  <td>Status</td>
-                  <td>Action</td>
-                </tr>
-              </thead>
-              <tbody>
-              {filteredStudents.length > 0 ? (
-                filteredStudents.map((student, index) => (
-                  <tr className="odd" key={index}>
-                    <td>{index + 1}</td>
-                    <td>{student.id}</td>
-                    <td>{student.techName}</td>
-                    <td>{student.name}</td>
-                    <td>{student.status}</td>
-                    <td className="stack-output">
-                      <NavLink 
-                      to='/admin/aspirants-progress/aspirant-tech'
-                      state={{studentId: student.id, studentName: student.name}}
-                      >
-                        <button className="btn re-submit">
-                          <span>
-                            <img src="https://admin.aspiraskillhub.aspirasys.com/images/export-pro.png" alt="Export" />
-                          </span>
-                        </button>
-                      </NavLink>
-                    </td>
+              <table className="tab-cols">
+                <thead>
+                  <tr className="odd odd1">
+                    <td>#</td>
+                    <td>Aspira ID</td>
+                    <td>Technology Name</td>
+                    <td>Name</td>
+                    <td>Status</td>
+                    <td>Action</td>
                   </tr>
-                ))
-              
-              ) : (
-                <tr className='odd odd2'>
-                  <td colSpan="7">No data available in the table</td>
-                </tr>
+                </thead>
+                <tbody>
+                  {filteredStudents.length > 0 ? (
+                    paginatedTechStacks.map((student, index) => (
+                      <tr className="odd" key={index}>
+                       <td>{(currentPage - 1) * 10 + index + 1}</td>
+                        <td>{student.id}</td>
+                        <td>{student.techName}</td>
+                        <td>{student.name}</td>
+                        <td>{student.status}</td>
+                        <td className="stack-output">
+                          <NavLink
+                            to='/admin/aspirants-progress/aspirant-tech'
+                            state={{ studentId: student.id, studentName: student.name }}
+                          >
+                            <button className="btn re-submit">
+                              <span>
+                                <img src="https://admin.aspiraskillhub.aspirasys.com/images/export-pro.png" alt="Export" />
+                              </span>
+                            </button>
+                          </NavLink>
+                        </td>
+                      </tr>
+                    ))
 
-              )}
-              </tbody>
-            </table>
+                  ) : (
+                    <tr className='odd odd2'>
+                      <td colSpan="7">No data available in the table</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
       </div>
-
+      <div className="pagination">
+        <Button
+          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+          style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
+          disabled={currentPage === 1}
+        >
+          Prev
+        </Button>
+        <span style={{ margin: '0 10px' }}>Page {currentPage} of {pages}</span>
+        <Button
+          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pages))}
+          style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
+          disabled={currentPage === pages}
+        >
+          Next
+        </Button>
+      </div>
     </Wrapper>
   );
 };
