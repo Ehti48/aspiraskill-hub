@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import styled from "styled-components";
 import { Link, useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import axios from "axios";
 
 
 const Wrapper = styled.section`
@@ -173,29 +174,35 @@ const Login = ({ onLogin, onReset }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     const newErrors = {};
     if (!email) newErrors.email = "Email is required.";
     if (!password) newErrors.password = "Password is required.";
-
+  
     setErrors(newErrors);
-
+  
     if (Object.keys(newErrors).length === 0) {
       try {
-        const response = await fetch("http://localhost:5050/api/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
+        const response = await axios.post("http://localhost:48857/api/admin/login", {
+          email,
+          password
         });
-
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "Login failed.");
-
+  
+        // Axios puts response data in response.data
+        const data = response.data;
+        
+        // Check for successful status code
+        if (response.status !== 200) {
+          throw new Error(data.error || "Login failed.");
+        }
+  
         localStorage.setItem("token", data.token);
         onLogin(data.token);
         navigate("/");
       } catch (error) {
-        setErrors({ password: error.message });
+        // Axios wraps errors, use error.response for server errors
+        const errorMessage = error.response?.data?.error || error.message;
+        setErrors({ password: errorMessage });
       }
     }
   };
@@ -249,7 +256,7 @@ const Login = ({ onLogin, onReset }) => {
                 {errors.password && <p className="error-message">{errors.password}</p>}
               </div>
               <div className="forgot-password">
-                <Link onClick={onReset}>Forgot Password?</Link>
+                <Link to="/reset">Forgot Password?</Link>
               </div>
               <button type="submit" className="login-button">
                 Login

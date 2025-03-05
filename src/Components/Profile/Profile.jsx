@@ -542,14 +542,14 @@ const Profile = () => {
           {activeSection === "general" && (
             <div className="general-section">
               <div className="general-card">
-              <Heading title={"General Information"} />
+                <Heading title={"General Information"} />
                 <div className="profile">
                   <div className="profile-image">
-                  <img src="https://admin.aspiraskillhub.aspirasys.com/images/edit-profile-page.png" alt="" id="profileImagePreview"/>
+                    <img src="https://admin.aspiraskillhub.aspirasys.com/images/edit-profile-page.png" alt="" id="profileImagePreview" />
                   </div>
                   <div className="profile-info">
                     <span className="role">ADMIN</span>
-                    <Heading title={formData.fullName} className="admin-name"/>
+                    <Heading title={formData.fullName} className="admin-name" />
                     {isEditing && (
                       <div className="photo-actions">
                         <p onClick={() => alert("Edit Photo")}>Edit Photo</p>
@@ -637,7 +637,7 @@ const Profile = () => {
                         className="toggle-visibility"
                         onClick={() => togglePasswordVisibility("currentPassword")}
                       >
-                        {showPassword.currentPassword ? <FaEye/> : <FaEyeSlash/>}
+                        {showPassword.currentPassword ? <FaEye /> : <FaEyeSlash />}
                       </i>
                     </div>
                     {errors.currentPassword && (
@@ -663,7 +663,7 @@ const Profile = () => {
                           className="toggle-visibility"
                           onClick={() => togglePasswordVisibility("newPassword")}
                         >
-                          {showPassword.newPassword ? <FaEye/> : <FaEyeSlash/>}
+                          {showPassword.newPassword ? <FaEye /> : <FaEyeSlash />}
                         </i>
                       </div>
                       {errors.newPassword && (
@@ -688,7 +688,7 @@ const Profile = () => {
                           className="toggle-visibility"
                           onClick={() => togglePasswordVisibility("confirmPassword")}
                         >
-                          {showPassword.confirmPassword ? <FaEye/> : <FaEyeSlash/>}
+                          {showPassword.confirmPassword ? <FaEye /> : <FaEyeSlash />}
                         </i>
                       </div>
                       {errors.confirmPassword && (

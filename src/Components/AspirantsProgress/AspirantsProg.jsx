@@ -9,6 +9,9 @@ import Interviews from './Interview/Interviews';
 
 const Wrapper = styled.section`
   .sub-navbar {
+    position: sticky;
+    top: 0;
+    z-index: 998;
     padding: 0 12px;
     background: #fff;
     box-shadow: 0px 2px 12px 1px rgba(6, 40, 61, 0.06);

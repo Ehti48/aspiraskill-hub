@@ -194,7 +194,6 @@ const Wrapper = styled.section`
 `;
 
 const TrainingPlan = () => {
-
   const [students, setStudents] = useState([
     { id: 'ASPT0244', techName: 'Basic Web Tech', name: 'Ibrahim.K', interviewCount: '-', performance: '-' },
     { id: 'ASPT0245', techName: 'React JS', name: 'Iqyan', interviewCount: '-', performance: '-' },
@@ -212,19 +211,6 @@ const TrainingPlan = () => {
 
   return (
     <Wrapper>
-
-      {/* <nav aria-label="breadcrumb">
-          <ol className="breadcrumb ad-sck">
-            <li className="breadcrumb-item">
-              <Link to="/admin/aspirants-progress">
-                Timesheet
-              </Link>
-            </li>
-            <li className="breadcrumb-item active" aria-current="page">
-              / ASP0450
-            </li>
-          </ol>
-        </nav> */}
       <div className="dateSec">
         <Heading title="Interviews" />
         <div className="list-cont">

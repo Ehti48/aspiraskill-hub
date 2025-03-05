@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import Heading from '../../Heading';
 import { NavLink } from 'react-router-dom';
-import { AiTwotoneEye } from 'react-icons/ai';
 import Button from '../../Button';
+import axios from 'axios';
 
 const Wrapper = styled.section`
 
@@ -244,39 +244,41 @@ const Wrapper = styled.section`
 `;
 
 const TrainingPlan = () => {
-
-  const [students, setStudents] = useState([
-    { id: 'ASPT0244', techName: 'Basic Web Tech', name: 'Ibrahim.K', status: '-', },
-    { id: 'ASPT0245', techName: 'React JS', name: 'Iqyan', status: '-', },
-    { id: 'ASP0246', techName: 'Node JS', name: 'Asma', technology: 'Node JS', mode: '-', status: '-', date: '2024-11-05', gender: 'Female' },
-    { id: 'ASP0247', techName: 'Node JS', name: 'Safwa', technology: 'Node JS', mode: '-', status: '-', date: '2024-10-15' },
-    { id: 'ASP0248', techName: 'Node JS', name: 'Lina', technology: 'Node JS', mode: '-', status: '-', date: '2024-10-01' },
-    { id: 'ASP0249', techName: 'Node JS', name: 'Sami', technology: 'Node JS', mode: '-', status: '-', date: '2024-10-02' },
-    { id: 'ASP0250', techName: 'Node JS', name: 'Amin', technology: 'Node JS', mode: '-', status: '-', date: '2024-10-03' },
-    { id: 'ASP0251', techName: 'Node JS', name: 'Ahmed', technology: 'Node JS', mode: '-', status: '-', date: '2024-10-04' },
-    { id: 'ASP0252', techName: 'Node JS', name: 'Mansour', technology: 'Node JS', mode: '-', status: '-', date: '2024-10-05' },
-    { id: 'ASP0253', techName: 'Node JS', name: 'Nabil', technology: 'Node JS', mode: '-', status: '-', date: '2024-10-06' },
-    { id: 'ASP0254', techName: 'Node JS', name: 'Saud', technology: 'Node JS', mode: '-', status: '-', date: '2024-10-07' },
-    { id: 'ASP0255', techName: 'Node JS', name: 'Abdullah', technology: 'Node JS', mode: '-', status: '-', date: '2024-10-08' },
-    { id: 'ASP0256', techName: 'Node JS', name: 'Hassan', technology: 'Node JS', mode: '-', status: '-', date: '2024-10-09' },
-    { id: 'ASP0257', techName: 'Node JS', name: 'Ali', technology: 'Node JS', mode: '-', status: '-', date: '2024-10-10' },
-  ]);
-
+  const [students, setStudents] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
-  const handleSearchChange = (e) => setSearchQuery(e.target.value);
+  useEffect(() => {
+    const fetchTimesheets = async () => {
+      try {
+        const response = await axios.get('http://localhost:48857/api/admin/aspirants-progress');
+        console.log('API Response:', response.data);
+        const data = response.data || [];
+        setStudents(data);
+      } catch (error) {
+        console.error('Error fetching students:', error.message);
+      }
+    };
 
-  const filteredStudents = students.filter(
-    (student) =>
-      student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.id.toLowerCase().includes(searchQuery.toLowerCase())
+    fetchTimesheets();
+  }, []);
+
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+    setCurrentPage(1); // Reset to first page on search
+  };
+
+  // Ensure undefined values don't cause issues
+  const filteredStudents = students.filter((student) =>
+    (typeof student?.full_name === 'string' && student.full_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (typeof student?.technology === 'string' && student.technology.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (typeof student?.aspirant_id === 'string' && student.aspirant_id.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const pages = Math.ceil(filteredStudents.length / 10);
   const start = (currentPage - 1) * 10;
   const end = start + 10;
-  const paginatedTechStacks = filteredStudents.slice(start, end);
+  const paginatedStudents = filteredStudents.slice(start, end); // Use filtered list
 
   return (
     <Wrapper>
@@ -293,9 +295,7 @@ const TrainingPlan = () => {
                   onChange={handleSearchChange}
                 />
               </div>
-              <Button className="exportBtn">
-                Export XLS
-              </Button>
+              <Button className="exportBtn">Export XLS</Button>
             </div>
             <div className="tab">
               <table className="tab-cols">
@@ -310,18 +310,18 @@ const TrainingPlan = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredStudents.length > 0 ? (
-                    paginatedTechStacks.map((student, index) => (
+                  {paginatedStudents.length > 0 ? (
+                    paginatedStudents.map((student, index) => (
                       <tr className="odd" key={index}>
-                       <td>{(currentPage - 1) * 10 + index + 1}</td>
-                        <td>{student.id}</td>
-                        <td>{student.techName}</td>
-                        <td>{student.name}</td>
-                        <td>{student.status}</td>
+                        <td>{start + index + 1}</td>
+                        <td>{student.aspirant_id}</td>
+                        <td>{student.technology}</td>
+                        <td>{student.full_name}</td>
+                        <td className="cut-text">{student.last_status}</td>
                         <td className="stack-output">
                           <NavLink
-                            to='/admin/aspirants-progress/aspirant-tech'
-                            state={{ studentId: student.id, studentName: student.name }}
+                            to="/admin/aspirants-progress/aspirant-tech"
+                            state={{ studentId: student.aspirant_id, studentTech: student.technology, studentAspirantId: student.aspirant_id, studentName: student.full_name }}
                           >
                             <button className="btn re-submit">
                               <span>
@@ -332,10 +332,9 @@ const TrainingPlan = () => {
                         </td>
                       </tr>
                     ))
-
                   ) : (
-                    <tr className='odd odd2'>
-                      <td colSpan="7">No data available in the table</td>
+                    <tr className="odd odd2">
+                      <td colSpan="7">No data available in the table.</td>
                     </tr>
                   )}
                 </tbody>
@@ -343,23 +342,42 @@ const TrainingPlan = () => {
             </div>
           </div>
         </div>
-      </div>
-      <div className="pagination">
-        <Button
-          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-          style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
-          disabled={currentPage === 1}
-        >
-          Prev
-        </Button>
-        <span style={{ margin: '0 10px' }}>Page {currentPage} of {pages}</span>
-        <Button
-          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pages))}
-          style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
-          disabled={currentPage === pages}
-        >
-          Next
-        </Button>
+        {paginatedStudents.length > 10 && (
+          <div className="pagination">
+            <Button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
+              disabled={currentPage === 1}
+            >
+              Prev
+            </Button>
+            {[...Array(pages)].map((_, i) => (
+              <button
+                key={i + 1}
+                onClick={() => setCurrentPage(i + 1)}
+                style={{
+                  padding: '8px 16px',
+                  border: 'none',
+                  borderRadius: '5px',
+                  backgroundColor: currentPage === i + 1 ? '#3282c4' : 'transparent', // Active color changed
+                  color: currentPage === i + 1 ? 'white' : '#3282c4',
+                  cursor: 'pointer',
+                  margin: '0 5px',
+                  boxShadow: currentPage === i + 1 ? 'none' : 'rgba(0, 0, 0, 0.2) 0px 0px 1px 1px',
+                }}
+              >
+                {i + 1}
+              </button>
+            ))}
+            <Button
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pages))}
+              style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
+              disabled={currentPage === pages}
+            >
+              Next
+            </Button>
+          </div>
+        )}
       </div>
     </Wrapper>
   );

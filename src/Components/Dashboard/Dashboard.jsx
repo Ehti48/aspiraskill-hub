@@ -318,7 +318,7 @@ const Dashboard = () => {
             image: "https://admin.aspiraskillhub.aspirasys.com/images/netflix-n.png",
             techStack: "HTML, CSS, JS",
         },
-        
+
     ];
 
     const data = {
@@ -389,13 +389,13 @@ const Dashboard = () => {
                             {messages.map((message, index) => (
                                 <div className="message" key={index}>
                                     <div className="msg-content">
-                                    <div className="clock">
-                                        <img src="https://admin.aspiraskillhub.aspirasys.com/images/clock.png" />
-                                    </div>
-                                    <div className="detail">
-                                        <p>{message.name}</p>
-                                        <span>{message.status}</span>
-                                    </div>
+                                        <div className="clock">
+                                            <img src="https://admin.aspiraskillhub.aspirasys.com/images/clock.png" />
+                                        </div>
+                                        <div className="detail">
+                                            <p>{message.name}</p>
+                                            <span>{message.status}</span>
+                                        </div>
                                     </div>
                                     <div className="arrow-bg">
                                         <img src="https://admin.aspiraskillhub.aspirasys.com/images/arrow-right.png" />
@@ -412,17 +412,17 @@ const Dashboard = () => {
                         <div className="box box2" style={{ overflowY: scrollableProj ? "scroll" : "hidden", height: scrollableProj ? "14em" : "13em" }}>
                             {projects.map((project, index) => (
                                 <div className="projects" key={index}>
-                                <div className="proj-content">
-                                    <div className="netflix">
-                                        <img src={project.image} />
-                                    </div>
-                                    <div className="detail">
-                                        <p>{project.title}</p>
-                                        <span>
-                                            <img src="https://admin.aspiraskillhub.aspirasys.com/images/scroll.png" />
-                                            {project.techStack}
-                                        </span>
-                                    </div>
+                                    <div className="proj-content">
+                                        <div className="netflix">
+                                            <img src={project.image} />
+                                        </div>
+                                        <div className="detail">
+                                            <p>{project.title}</p>
+                                            <span>
+                                                <img src="https://admin.aspiraskillhub.aspirasys.com/images/scroll.png" />
+                                                {project.techStack}
+                                            </span>
+                                        </div>
                                     </div>
                                     <div className="edit">
                                         <img src="https://admin.aspiraskillhub.aspirasys.com/images/edit.png" />

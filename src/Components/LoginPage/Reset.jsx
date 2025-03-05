@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import { Link } from "react-router-dom";
+import axios from "axios";
 
 const Wrapper = styled.section`
 /* Container setup */
@@ -161,62 +162,78 @@ const Wrapper = styled.section`
 }
 `;
 
-const Reset = ({onLogout}) => {
+const Reset = ({ onLogout }) => {
   const [email, setEmail] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [errors, setErrors] = useState({ email: "" });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setSuccessMessage(""); // Clear old messages
+    setErrors({ email: "" });
 
-    const newErrors = {};
-    if (!email) newErrors.email = "Email is required.";
-    
-    setErrors(newErrors);
-
-    if (Object.keys(newErrors).length === 0) {
-      // Proceed with form submission
-      console.log("Form submitted:", { email });
+    if (!email.trim()) {
+        setErrors({ email: "Email is required." });
+        return;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        setErrors({ email: "Enter a valid email address." });
+        return;
     }
-  };
+
+    try {
+        console.log("Sending request to server with email:", email);
+        const response = await fetch("http://localhost:5000/api/admin/reset-password/:resettoken", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email }),
+        });
+
+        const data = await response.json();
+        console.log("Server response:", data);
+
+        if (response.ok) {
+            setSuccessMessage("Password reset link sent successfully.");
+            setEmail("");
+        } else {
+            setErrors({ email: data.error || "Something went wrong." });
+        }
+    } catch (error) {
+        console.error("Error:", error);
+        setErrors({ email: "Server error. Please try again later." });
+    }
+};
 
   return (
     <Wrapper>
       <div className="login-container">
-        {/* Left illustration section */}
         <div className="login-illustration">
-        <div className="illustration-content"></div>
+          <div className="illustration-content"></div>
         </div>
 
-        {/* Login form */}
         <div className="login-form-container">
           <div className="login-form">
             <h2>Reset Password</h2>
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label htmlFor="email">E-Mail Address</label>
-                {email !== null && email !== undefined && (
-                  <input
-                    type="email"
-                    id="email"
-                    placeholder="Enter Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className={errors.email ? "input-error" : ""}
-                  />
-                )}
-                {errors.email && (
-                  <p className="error-message">{errors.email}</p>
-                )}
+                <input
+                  type="email"
+                  id="email"
+                  placeholder="Enter Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={errors.email ? "input-error" : ""}
+                />
+                {errors.email && <p className="error-message">{errors.email}</p>}
               </div>
-              <button onClick={onLogout} type="submit" className="login-button" >
+              <button type="submit" className="login-button">
                 Send Password Reset Link
               </button>
               <div className="forgot-password">
-                {onLogout !== null && onLogout !== undefined && (
-                  <Link onClick={onLogout}>Back to Login</Link>
-                )}
+                {onLogout && <Link onClick={onLogout}>Back to Login</Link>}
               </div>
             </form>
+            {successMessage && <p className="success-message">{successMessage}</p>}
           </div>
         </div>
       </div>

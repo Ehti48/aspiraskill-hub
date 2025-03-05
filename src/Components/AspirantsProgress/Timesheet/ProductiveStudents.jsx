@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Link, useLocation } from 'react-router-dom';
-import Heading from '../../Heading';
+import Heading from '../../../Components/Heading';
 import { MdKeyboardArrowRight } from "react-icons/md";
+import axios from 'axios';
 
 const Wrapper = styled.section`
 .main-bg {
@@ -42,6 +43,7 @@ const Wrapper = styled.section`
     color: #252E4A;
     font-size: 18px;
     font-weight: 600;
+    margin-left: 15px;
 
     &:before {
         position: absolute;
@@ -178,6 +180,11 @@ const Wrapper = styled.section`
     }
 }
 
+.odd {
+    grid-template-columns: 1fr !important;
+    place-items: center;
+}
+
 .table-responsive {
     margin-top: 20px;
     overflow-x: auto;
@@ -281,42 +288,64 @@ const Wrapper = styled.section`
 }
 `;
 
-const stages = [
-    {
-        stageName: 'Stage 01',
-        date: '2024-09-30',
-        description: 'Web Dev start',
-        color: '#FF6636', // Orange
-        bColor: '#FF6636', // Orange
-    },
-    {
-        stageName: 'Stage 02',
-        date: '2024-12-29',
-        description: 'Advance Tech Start',
-        color: '#007BFF', // Blue
-        bColor: '#007BFF', // Blue
-    },
-    {
-        stageName: 'Stage 03',
-        date: '2025-06-27',
-        description: 'Job ready',
-        color: '#28A745', // Green
-        bColor: '#28A745', // Green
-    },
-    {
-        stageName: 'Stage 04',
-        date: '2025-08-26',
-        description: 'Job Hired',
-        color: '#FFC107', // Yellow
-        bColor: '#FFC10700', // Yellow
-    },
-];
-
 const ProductiveStudents = () => {
-
     const location = useLocation();
     const studentId = location.state?.studentId;
     const studentName = location.state?.studentName;
+
+    const [activeStage, setActiveStage] = useState(null);
+
+    useEffect(() => {
+        const fetchActiveStage = async () => {
+            try {
+                const response = await axios.get(`http://localhost:48857/api/admin/timesheet/1/productive-rate`);
+                console.log('API Response:', response.data);
+                setActiveStage(response.data);
+            } catch (error) {
+                console.error('Error fetching active stage:', error);
+            }
+        };
+
+        fetchActiveStage();
+    }, []);
+
+    useEffect(() => {
+        if (activeStage) {
+            console.log('Active Stage:', activeStage.productivity);
+        }
+    }, [activeStage]);
+
+    const stages = [
+        {
+            stageName: 'Stage 01',
+            date: '2024-09-30',
+            description: 'Web Dev start',
+            color: '#FF6636',
+            bColor: '#FF6636',
+        },
+        {
+            stageName: 'Stage 02',
+            date: '2024-12-29',
+            description: 'Advance Tech Start',
+            color: '#007BFF',
+            bColor: '#007BFF',
+        },
+        {
+            stageName: 'Stage 03',
+            date: '2025-06-27',
+            description: 'Job ready',
+            color: '#28A745',
+            bColor: '#28A745',
+        },
+        {
+            stageName: 'Stage 04',
+            date: '2025-08-26',
+            description: 'Job Hired',
+            color: '#FFC107',
+            bColor: '#FFC10700',
+        },
+    ];
+
     return (
         <Wrapper>
             <div className="main-bg learning-section" id="mainContent">
@@ -325,106 +354,89 @@ const ProductiveStudents = () => {
                         <nav aria-label="breadcrumb">
                             <ol className="breadcrumb ad-sck">
                                 <li className="breadcrumb-item">
-                                    <Link to="/admin/aspirants-progress">
-                                        Timesheet
-                                    </Link>
+                                    <Link to="/admin/aspirants-progress">Timesheet</Link>
                                 </li>
-                                    <MdKeyboardArrowRight />
+                                <MdKeyboardArrowRight />
                                 <li className="breadcrumb-item active" aria-current="page">
-                                     {studentId}
+                                    {studentId}
                                 </li>
                             </ol>
                         </nav>
                         <div className="usertime-id">
-                            <p className="usertime-name">
-                                Aspirant : {studentId} - {studentName}
-                            </p>
+                            <p className="usertime-name">Aspirant : {studentId} - {studentName}</p>
                         </div>
                     </div>
                     <div className="ProductiveRate green mb-4">
                         <p>Your dedication is truly inspiring.</p>
                     </div>
 
-                    <div>
-                        <div className="journey-timeline">
-                            <h6 className="font-20 fw_500">Journey Timeline</h6>
-                            <div className="timesheet-productive-page">
-                                <div className="stage-level">
-                                    {stages.map((stage, index) => (
-                                        <div
-                                            key={index}
-                                            className="stage-flow"
-                                            style={{ '--block-color': stage.color, '--block-color-2': stage.bColor }}
-                                        >
-                                            <p
-                                                className="productive-time font-12 fw_500"
-                                                style={{
-                                                    color: index === 0 ? stage.color : '#000000aa', marginBottom: '5px'
-                                                }}
-                                            >
-                                                {stage.stageName}
-                                            </p>
-                                            <div
-                                                className="block"
-                                                style={{
-                                                    backgroundColor: stage.color,
-                                                }}
-                                            >
-                                                {stage.date}
-                                            </div>
-                                            <p className="btm-content font-14 fw_500">
-                                                {stage.description}
-                                            </p>
+                    <div className="journey-timeline">
+                        <h6 className="font-20 fw_500">Journey Timeline</h6>
+                        <div className="timesheet-productive-page">
+                            <div className="stage-level">
+                                {stages.map((stage, index) => (
+                                    <div key={index} className="stage-flow" style={{ '--block-color': stage.color, '--block-color-2': stage.bColor }}>
+                                        <p className="productive-time font-12 fw_500" style={{ color: index === 0 ? stage.color : '#000000aa', marginBottom: '5px' }}>
+                                            {stage.stageName}
+                                        </p>
+                                        <div className="block" style={{ backgroundColor: stage.color }}>
+                                            {stage.date}
                                         </div>
-                                    ))}
-
-                                </div>
+                                        <p className="btm-content font-14 fw_500">{stage.description}</p>
+                                    </div>
+                                ))}
                             </div>
                         </div>
-
-                        <div className="training-plan-content">
-                            <div className="product-rate">
-                                <div className="tech-stack d-flex justify-content-between">
-                                    <Heading title='Productive rate' />
-                                </div>
-                                <div className="table-responsive any-role">
-                                    <table className="table">
-                                        <thead>
-                                            <tr>
-                                                <th>Activity Category</th>
-                                                <th>Hours</th>
-                                                <th>Days</th>
-                                            </tr>
-                                        </thead>
+                    </div>
+                    <div className="training-plan-content">
+                        <div className="product-rate">
+                            <div className="tech-stack d-flex justify-content-between">
+                                <Heading title='Productive rate' />
+                            </div>
+                            <div className="table-responsive any-role">
+                                <table className="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Activity Category</th>
+                                            <th>Hours</th>
+                                            <th>Days</th>
+                                        </tr>
+                                    </thead>
+                                    {activeStage && (
                                         <tbody>
                                             <tr>
                                                 <td>Productive Effort</td>
-                                                <td>246</td>
-                                                <td>49</td>
+                                                <td>{activeStage.productivity?.hours || 0}</td>
+                                                <td>{activeStage.productivity?.days || 0}</td>
                                             </tr>
                                             <tr>
                                                 <td>System/Power issue</td>
-                                                <td>0</td>
-                                                <td>0</td>
+                                                <td>{activeStage.systemIssue?.hours || 0}</td>
+                                                <td>{activeStage.systemIssue?.days || 0}</td>
                                             </tr>
                                             <tr>
                                                 <td>Leave</td>
-                                                <td>5</td>
-                                                <td>12</td>
+                                                <td>{activeStage.leave?.hours || 0}</td>
+                                                <td>{activeStage.leave?.days || 0}</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Permission</td>
+                                                <td>{activeStage.permission?.hours || 0}</td>
+                                                <td>{activeStage.permission?.days || 0}</td>
                                             </tr>
                                             <tr className="grand-value">
                                                 <td>Grand Total</td>
-                                                <td>246</td>
-                                                <td>61</td>
+                                                <td>{activeStage.totalHours}</td>
+                                                <td>{activeStage.totalDays}</td>
                                             </tr>
                                             <tr className="total-value">
                                                 <td>Productivity Rate</td>
                                                 <td></td>
-                                                <td>100%</td>
+                                                <td>{activeStage.productiveEffortPercentage}%</td>
                                             </tr>
                                         </tbody>
-                                    </table>
-                                </div>
+                                    )}
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -433,5 +445,7 @@ const ProductiveStudents = () => {
         </Wrapper>
     );
 };
+
+
 
 export default ProductiveStudents;

@@ -1,7 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
 import { Bar } from 'react-chartjs-2';
-import newRegData from './NewRegs/NewRegApi';
 import {
   Chart as ChartJS,
   CategoryScale,

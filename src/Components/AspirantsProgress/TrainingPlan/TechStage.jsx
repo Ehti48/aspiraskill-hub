@@ -1,8 +1,10 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
+import axios from "axios";
 import styled from 'styled-components'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import Button from '../../Button'
+import Button from '../../../Components/Button'
 import { MdKeyboardArrowRight } from "react-icons/md";
+import Loader from '../../../Components/Loader';
 
 const Wrapper = styled.section`
 
@@ -152,7 +154,7 @@ const Wrapper = styled.section`
     }
   }
 
-  @media (max-width: 600px) {
+  @media (max-width: 650px) {
 
   .breadcrumb {
       padding: 0px !important;
@@ -172,21 +174,46 @@ const Wrapper = styled.section`
 `
 
 const TechStage = () => {
+    const [stages, setStages] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
     const navigate = useNavigate();
     const location = useLocation();
     const techId = location.state?.techId;
     const studentId = location.state?.studentId;
     const techName = location.state?.techName;
 
-    const stages = [
-        { id: 1, title: "Beginner", start: 'Completed', progress: 100, image: "https://admin.aspiraskillhub.aspirasys.com/uploads/technology/1727864297.png" },
-        { id: 2, title: "Intermediate", start: 'In Progress', progress: 50, image: "https://admin.aspiraskillhub.aspirasys.com/images/no-image-found.jpg" },
-        { id: 3, title: "Advanced", start: 'Yet To Start', progress: 0, image: "https://admin.aspiraskillhub.aspirasys.com/uploads/technology/1727886880.png" },
-    ];
+    // Fetch data from the API
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const response = await axios.get(
+                    `http://localhost:48857/api/admin/aspirants-progress/stages/${techId}/${studentId}`
+                );
+                setStages(response.data);
+                setLoading(false);
+            } catch (err) {
+                console.error("Error fetching stages:", err);
+                setError("Failed to fetch stages. Please try again later.");
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [techId, studentId]);
 
     const getRangeStyle = (value) => ({
         background: `linear-gradient(to right, #3282c4 ${value}%, #ddd ${value}%)`,
     });
+
+    if (loading) {
+        return <Loader />;
+    }
+
+    if (error) {
+        return <div>{error}</div>;
+    }
 
     return (
         <Wrapper>
@@ -196,43 +223,66 @@ const TechStage = () => {
                         <li className="breadcrumb-item">
                             <Link to="/admin/aspirants-progress">Training Plan</Link>
                         </li>
-                        <MdKeyboardArrowRight/>
+                        <MdKeyboardArrowRight />
                         <li className="breadcrumb-item">
                             <Link onClick={() => navigate(-1)}>{techName}</Link>
                         </li>
-                        <MdKeyboardArrowRight/>
+                        <MdKeyboardArrowRight />
                         <li className="breadcrumb-item active" aria-current="page">
                             {techId}
                         </li>
                     </ol>
                 </nav>
                 <div className="card-sec">
-                    {stages.map((stage) => (
-                        <div key={stage.id} className="card">
-                            <div className="card-body">
-                                <img src={stage.image} alt={`${stage.title} Image`} className="card-img" />
-                                <h3 className="card-title">{stage.title}</h3>
-                                <p className="card-text">{stage.start} <span>{stage.progress}%</span></p>
-                                <div className="range">
-                                    <input
-                                        type="range"
-                                        min="0"
-                                        max="100"
-                                        value={stage.progress}
-                                        className="range-input"
-                                        style={getRangeStyle(stage.progress)}
-                                        readOnly
+                    {stages.map((stage, index) => {
+                        const progress = parseFloat(stage.completion_percentage); // Convert percentage to number
+                        return (
+                            <div key={stage.stage_id} className="card">
+                                <div className="card-body">
+                                    <img
+                                        src="https://admin.aspiraskillhub.aspirasys.com/uploads/technology/1727864297.png" // Replace with dynamic image if available
+                                        alt={`${stage.stage_name} Image`}
+                                        className="card-img"
                                     />
+                                    <h3 className="card-title">
+                                        {stage.stage_name} <span>Stage {index + 1}</span>
+                                    </h3>
+                                    <p className="card-text">
+                                        {progress === 0 ? "Yet To Start" : progress === 100 ? "Completed" : "In Progress"}{" "}
+                                        <span>{progress}%</span>
+                                    </p>
+                                    <div className="range">
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max="100"
+                                            value={progress}
+                                            className="range-input"
+                                            style={getRangeStyle(progress)}
+                                            readOnly
+                                        />
+                                    </div>
+                                    <Link
+                                        to="/admin/aspirants-progress/material-detail"
+                                        state={{
+                                            stageTitle: stage.stage_name,
+                                            techName: techName,
+                                            studentId: studentId,
+                                            stageId: stage.stage_id,
+                                            technologyId: techId,
+                                        }}
+                                    >
+                                        <Button>
+                                            View stage{" "}
+                                            <span>
+                                                <img src="https://admin.aspiraskillhub.aspirasys.com/images/arrow-right.png" alt="arrow" />
+                                            </span>
+                                        </Button>
+                                    </Link>
                                 </div>
-                                <Link 
-                                to="/admin/aspirants-progress/material-detail"
-                                state={{stageTitle: stage.title, techName: techName, studentId: studentId}}
-                                >
-                                    <Button>View stage <span><img src="https://admin.aspiraskillhub.aspirasys.com/images/arrow-right.png"/></span></Button>
-                                </Link>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
         </Wrapper>

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, NavLink } from 'react-router-dom';
 import styled from 'styled-components';
-import Heading from '../Heading';
+import Heading from '../../Components/Heading';
 import EditModal from './EditModal';
 import { MdOutlineDangerous } from "react-icons/md";
 import { Link } from 'react-router-dom';
-import Button from '../Button';
+import Button from '../../Components/Button';
 
 const Wrapper = styled.section`
   .container {
@@ -67,7 +67,7 @@ const Wrapper = styled.section`
     height: 45px;
     padding-left: 10px;
     display: grid;
-    grid-template-columns: 50px 150px 200px 90px 225px 100px 135px!important;
+    grid-template-columns: 0.5fr 1.2fr 2fr 0.9fr 2fr 1fr 1.5fr !important;
     grid-template-rows: 45px;
     border: 1px solid #cbcbcb;
     border-top: none;
@@ -251,7 +251,15 @@ const Wrapper = styled.section`
       }
     }
 
-  @media (min-width: 1350px) { 
+      .pagination {
+      margin: 15px 0 0 0;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+  }
+
+  @media (min-width: 1500px) { 
     .odd {
       font-size: 16px;
       grid-template-columns: .4fr .8fr 1fr .8fr 1.4fr 1fr 0.8fr !important;
@@ -278,17 +286,6 @@ const Wrapper = styled.section`
       }
     }
 `;
-
-// import React, { useState, useEffect } from 'react';
-// import { NavLink } from 'react-router-dom';
-// import styled from 'styled-components';
-// import Heading from '../Heading';
-// import EditModal from './EditModal';
-// import Button from '../Button';
-
-// const Wrapper = styled.section`
-//   /* Your existing styles */
-// `;
 
 const MyLearnings = () => {
   const initialTechStacks = [
@@ -462,7 +459,6 @@ const MyLearnings = () => {
                 <td>Action</td>
               </tr>
             </thead>
-
             <tbody>
               {filteredTechStacks.length > 0 ? (
                 paginatedTechStacks.map((techStack, index) => (
@@ -471,7 +467,7 @@ const MyLearnings = () => {
                     <td>{techStack.id}</td>
                     <td>{techStack.name}</td>
                     <td>{techStack.stages}</td>
-                    <td>{techStack.description || '-'}</td>
+                    <td className='cut-text'>{techStack.description || '-'}</td>
                     <td>
                       {techStack.thumbnail ? (
                         <img className='thumb' src={techStack.thumbnail} alt={techStack.name} width="50" height="50" />
@@ -517,23 +513,42 @@ const MyLearnings = () => {
             </tbody>
           </table>
         </div>
-        <div className="pagination" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', margin: '15px 0 0px 0' }}>
-          <button
+        {filteredTechStacks.length > 10 && (
+          <div className="pagination">
+          <Button
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
             disabled={currentPage === 1}
           >
             Prev
-          </button>
-          <span style={{ margin: '0 10px' }}>Page {currentPage} of {pages}</span>
-          <button
-            onClick={() => setCurrentPage((prev) => Math.min(prev +  1, pages))}
+          </Button>
+          {[...Array(pages)].map((_, i) => (
+            <button
+              key={i + 1}
+              onClick={() => setCurrentPage(i + 1)}
+              style={{
+                padding: '8px 16px',
+                border: 'none',
+                borderRadius: '5px',
+                backgroundColor: currentPage === i + 1 ? '#3282c4' : 'transparent', // Active color changed
+                color: currentPage === i + 1 ? 'white' : '#3282c4',
+                cursor: 'pointer',
+                margin: '0 5px',
+                boxShadow: currentPage === i + 1 ? 'none' : 'rgba(0, 0, 0, 0.2) 0px 0px 1px 1px',
+              }}
+            >
+              {i + 1}
+            </button>
+          ))}
+          <Button
+            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pages))}
             style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
             disabled={currentPage === pages}
           >
             Next
-          </button>
+          </Button>
         </div>
+        )}
         {isModalOpen && (
           <EditModal
             isOpen={isModalOpen}

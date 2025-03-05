@@ -595,16 +595,23 @@ const Events = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showEventContent, setShowEventContent] = useState(true);
-  const [deleteId, setDeleteId] = useState(null); // Store the id of the event to be deleted
+  const [deleteId, setDeleteId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
+  // Fetch events from the backend
   useEffect(() => {
-    const stroredEvents = JSON.parse(localStorage.getItem("events") || '[]');
-    setEvents(stroredEvents);
+    const fetchEvents = async () => {
+      try {
+        const response = await fetch("http://localhost:48857/api/admin/events");
+        if (!response.ok) throw new Error("Failed to fetch events");
+        const data = await response.json();
+        setEvents(data);
+      } catch (error) {
+        console.error("Error fetching events:", error);
+      }
+    };
+    fetchEvents();
   }, []);
-
-  useEffect(() => {
-    localStorage.setItem("events", JSON.stringify(events));
-  }, [events]);
 
   const closePopup = () => {
     document.querySelector(".addPopup").style.display = "none";
@@ -615,7 +622,7 @@ const Events = () => {
   };
 
   const deleteOpenPopup = (id) => {
-    setDeleteId(id); // Set the id of the event to be deleted
+    setDeleteId(id);
     document.querySelector(".deletePopup").style.display = "flex";
   };
 
@@ -623,102 +630,119 @@ const Events = () => {
     document.querySelector(".deletePopup").style.display = "none";
   };
 
-  const handleSubmit = (e) => {
+  // Handle Create Event
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const eventName = e.target.eventName.value;
-    const eventLink = e.target.eventLink.value;
-    const eventDescription = e.target.eventDescription.value;
-    const eventDate = e.target.eventDate.value;
-    const eventTime = e.target.eventTime.value;
+    const newEvent = {
+      title: e.target.eventName.value,
+      description: e.target.eventDescription.value,
+      date: e.target.eventDate.value,
+      time: e.target.eventTime.value,
+      mode: e.target.mode.value, // Added mode field
+      joining_link: e.target.eventLink.value,
+      created_by: 1, // Replace with actual user ID
+    };
 
-    setEvents((prevEvents) => [
-      ...prevEvents,
-      {
-        id: prevEvents.length + 1,
-        name: eventName,
-        link: eventLink,
-        description: eventDescription,
-        dateTime: `${eventDate} ${eventTime}`,
-      },
-    ]);
+    try {
+      const response = await fetch("http://localhost:48857/api/admin/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newEvent),
+      });
 
-    e.target.reset();
-    closePopup();
-    setShowEventContent(false); // Hide event content after adding an event
+      if (!response.ok) throw new Error("Failed to create event");
+
+      // Refresh events list
+      const updatedResponse = await fetch("/api/events");
+      const updatedData = await updatedResponse.json();
+      setEvents(updatedData);
+      closePopup();
+      setShowEventContent(false);
+    } catch (error) {
+      console.error("Error:", error);
+    }
   };
 
-  const handleDelete = () => {
-    // Remove the event with the specified deleteId
-    const updatedEvents = events.filter((event) => event.id !== deleteId);
+  // Handle Delete Event
+  const handleDelete = async () => {
+    try {
+      const response = await fetch(`http://localhost:48857/api/admin/events/${deleteId}`, {
+        method: "DELETE",
+      });
 
-    // Reassign serial numbers (S.No)
-    const reorderedEvents = updatedEvents.map((event, index) => ({
-      ...event,
-      id: index + 1,
-    }));
+      if (!response.ok) throw new Error("Failed to delete event");
 
-    setEvents(reorderedEvents); // Update the state
-    setDeleteId(null); // Reset deleteId
-    deleteNo(); // Close the delete popup
+      // Refresh events list
+      const updatedResponse = await fetch("/api/events");
+      const updatedData = await updatedResponse.json();
+      setEvents(updatedData);
+      deleteNo();
+    } catch (error) {
+      console.error("Error:", error);
+    }
   };
 
+  // Handle Edit Event
   const handleEdit = (id) => {
-
     const eventToEdit = events.find((event) => event.id === id);
     if (eventToEdit) {
-      setSelectedEvent(eventToEdit); // Set the selected event data
-      document.querySelector(".editPopup").style.display = "flex"; // Show the edit popup
+      setSelectedEvent(eventToEdit);
+      document.querySelector(".editPopup").style.display = "flex";
     }
-
     setShowModal(false);
   };
 
   const closeEditPopup = () => {
-    document.querySelector(".editPopup").style.display = "none"; // Close the edit popup
-    setSelectedEvent(null); // Clear selected event data
+    document.querySelector(".editPopup").style.display = "none";
+    setSelectedEvent(null);
   };
 
-  const handleEditSubmit = (e) => {
+  // Handle Update Event
+  const handleEditSubmit = async (e) => {
     e.preventDefault();
-
-    const updatedName = e.target.eventName.value;
-    const updatedLink = e.target.eventLink.value;
-    const updatedDescription = e.target.eventDescription.value;
-    const updatedDate = e.target.eventDate.value;
-    const updatedTime = e.target.eventTime.value;
-
     const updatedEvent = {
-      ...selectedEvent,
-      name: updatedName,
-      link: updatedLink,
-      description: updatedDescription,
-      dateTime: `${updatedDate} ${updatedTime}`,
+      title: e.target.eventName.value,
+      description: e.target.eventDescription.value,
+      date: e.target.eventDate.value,
+      time: e.target.eventTime.value,
+      mode: e.target.mode.value, // Added mode field
+      joining_link: e.target.eventLink.value,
     };
 
-    const updatedEvents = events.map((event) =>
-      event.id === selectedEvent.id ? updatedEvent : event
-    );
+    try {
+      const response = await fetch(`http://localhost:48857/api/admin/events/4`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedEvent),
+      });
 
-    setEvents(updatedEvents); // Update the events list
-    closeEditPopup(); // Close the popup
+      if (!response.ok) throw new Error("Failed to update event");
+
+      // Refresh events list
+      const updatedResponse = await fetch("http://localhost:48857/api/admin/events/4");
+      const updatedData = await updatedResponse.json();
+      setEvents(updatedData);
+      closeEditPopup();
+    } catch (error) {
+      console.error("Error:", error);
+    }
   };
 
-
+  // Handle View Event
   const handleView = (event) => {
-    setSelectedEvent(event); // Set the selected event data
-    setShowModal(true); // Show the modal
+    setSelectedEvent(event);
+    setShowModal(true);
   };
 
   const closeModal = () => {
-    setSelectedEvent(null); // Clear the selected event data
-    setShowModal(false); // Hide the modal
-    console.log("Modal closed");
+    setSelectedEvent(null);
+    setShowModal(false);
     document.querySelector(".deletePopup").style.display = "none";
   };
-  const [searchTerm, setSearchTerm] = useState("");
 
+  // Filter events based on search term
   const filteredEvents = events.filter((event) =>
-    event.name.toLowerCase().includes(searchTerm.toLowerCase())
+    event.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -730,9 +754,7 @@ const Events = () => {
               <div className="eventHeader">
                 <h2>Upcoming Events</h2>
                 <div className="events-search">
-                  <button onClick={openPopup}>
-                    + Add Event
-                  </button>
+                  <button onClick={openPopup}>+ Add Event</button>
                   <input
                     type="search"
                     placeholder="Search"
@@ -759,14 +781,14 @@ const Events = () => {
                       filteredEvents.map((event) => (
                         <tr className="row" key={event.id}>
                           <td>{event.id}</td>
-                          <td>{event.name}</td>
-                          <td>
+                          <td>{event.title}</td>
+                          <td className="cut-text">
                             <a href="#" onClick={() => handleView(event)}>
-                              {event.link}
+                              {event.joining_link}
                             </a>
                           </td>
-                          <td>{event.description}</td>
-                          <td>{event.dateTime}</td>
+                          <td className="cut-text">{event.description}</td>
+                          <td>{`${event.date} ${event.time}`}</td>
                           <td className="actions">
                             <img
                               src="https://admin.aspiraskillhub.aspirasys.com/images/eye.png"
@@ -798,25 +820,23 @@ const Events = () => {
               </div>
             </div>
           </div>
-
         ) : (
-
           <div className="event-content">
             <img src="https://admin.aspiraskillhub.aspirasys.com/images/events.png" />
-            <h2>
-              "No Events & Info Found"
-            </h2>
-            <button onClick={openPopup}>
-              + Add Event
-            </button>
+            <h2>"No Events & Info Found"</h2>
+            <button onClick={openPopup}>+ Add Event</button>
           </div>
         )}
+
+        {/* Delete Confirmation Popup */}
         <div className="deletePopup">
-          <span onClick={deleteNo} className="close" >
-            <p><img src="https://admin.aspiraskillhub.aspirasys.com/images/close-circle.png" alt="" /></p>
+          <span onClick={deleteNo} className="close">
+            <p>
+              <img src="https://admin.aspiraskillhub.aspirasys.com/images/close-circle.png" alt="" />
+            </p>
           </span>
-          <div class="del-icon">
-            <img src="https://admin.aspiraskillhub.aspirasys.com/images/mdi_trash.png" alt="delete"/>
+          <div className="del-icon">
+            <img src="https://admin.aspiraskillhub.aspirasys.com/images/mdi_trash.png" alt="delete" />
           </div>
           <h3>Are You Sure?</h3>
           <p>To delete the Weekly event</p>
@@ -829,6 +849,8 @@ const Events = () => {
             </button>
           </div>
         </div>
+
+        {/* Add Event Popup */}
         <div className="addPopup">
           <h1>
             Add Event <p onClick={closePopup}>×</p>
@@ -848,13 +870,14 @@ const Events = () => {
               <div className="form-line">
                 <label htmlFor="eventLink">Event Link</label>
                 <input
+                  className="cut-text"
                   type="url"
                   id="eventLink"
                   name="eventLink"
                   placeholder="Enter Link"
                   required
                 />
-                <div class="paste">
+                <div className="paste">
                   <img src="https://admin.aspiraskillhub.aspirasys.com/images/paste.png" />
                 </div>
               </div>
@@ -878,12 +901,17 @@ const Events = () => {
               </div>
             </div>
             <div className="forms-line">
+              <div className="form-line">
+                <label htmlFor="mode">Event Mode</label>
+                <select id="mode" name="mode" required>
+                  <option value="online">Online</option>
+                  <option value="offline">Offline</option>
+                </select>
+              </div>
+            </div>
+            <div className="forms-line">
               <div className="form-line form-btn">
-                <button
-                  type="button"
-                  className="cancel-btn"
-                  onClick={closePopup}
-                >
+                <button type="button" className="cancel-btn" onClick={closePopup}>
                   Cancel
                 </button>
                 <button type="submit" className="save-btn">
@@ -893,6 +921,8 @@ const Events = () => {
             </div>
           </form>
         </div>
+
+        {/* Edit Event Popup */}
         <div className="editPopup">
           <h1>
             Edit Event <p onClick={closeEditPopup}>×</p>
@@ -905,9 +935,9 @@ const Events = () => {
                   type="text"
                   id="eventName"
                   name="eventName"
-                  value={selectedEvent?.name || ""}
+                  value={selectedEvent?.title || ""}
                   onChange={(e) =>
-                    setSelectedEvent((prev) => ({ ...prev, name: e.target.value }))
+                    setSelectedEvent((prev) => ({ ...prev, title: e.target.value }))
                   }
                   placeholder="Enter Name"
                   required
@@ -919,9 +949,9 @@ const Events = () => {
                   type="url"
                   id="eventLink"
                   name="eventLink"
-                  value={selectedEvent?.link || ""}
+                  value={selectedEvent?.joining_link || ""}
                   onChange={(e) =>
-                    setSelectedEvent((prev) => ({ ...prev, link: e.target.value }))
+                    setSelectedEvent((prev) => ({ ...prev, joining_link: e.target.value }))
                   }
                   placeholder="Enter Link"
                   required
@@ -937,10 +967,7 @@ const Events = () => {
                   rows="3"
                   value={selectedEvent?.description || ""}
                   onChange={(e) =>
-                    setSelectedEvent((prev) => ({
-                      ...prev,
-                      description: e.target.value,
-                    }))
+                    setSelectedEvent((prev) => ({ ...prev, description: e.target.value }))
                   }
                   required
                 ></textarea>
@@ -952,12 +979,9 @@ const Events = () => {
                     type="date"
                     id="eventDate"
                     name="eventDate"
-                    value={selectedEvent?.dateTime?.split(" ")[0] || ""}
+                    value={selectedEvent?.date || ""}
                     onChange={(e) =>
-                      setSelectedEvent((prev) => ({
-                        ...prev,
-                        dateTime: `${e.target.value} ${selectedEvent?.dateTime?.split(" ")[1] || ""}`,
-                      }))
+                      setSelectedEvent((prev) => ({ ...prev, date: e.target.value }))
                     }
                     required
                   />
@@ -965,12 +989,9 @@ const Events = () => {
                     type="time"
                     id="eventTime"
                     name="eventTime"
-                    value={selectedEvent?.dateTime?.split(" ")[1] || ""}
+                    value={selectedEvent?.time || ""}
                     onChange={(e) =>
-                      setSelectedEvent((prev) => ({
-                        ...prev,
-                        dateTime: `${selectedEvent?.dateTime?.split(" ")[0] || ""} ${e.target.value}`,
-                      }))
+                      setSelectedEvent((prev) => ({ ...prev, time: e.target.value }))
                     }
                     required
                   />
@@ -978,12 +999,25 @@ const Events = () => {
               </div>
             </div>
             <div className="forms-line">
-              <div className="form-line form-btn">
-                <button
-                  type="button"
-                  className="cancel-btn"
-                  onClick={closeEditPopup}
+              <div className="form-line">
+                <label htmlFor="mode">Event Mode</label>
+                <select
+                  id="mode"
+                  name="mode"
+                  value={selectedEvent?.mode || "online"}
+                  onChange={(e) =>
+                    setSelectedEvent((prev) => ({ ...prev, mode: e.target.value }))
+                  }
+                  required
                 >
+                  <option value="online">Online</option>
+                  <option value="offline">Offline</option>
+                </select>
+              </div>
+            </div>
+            <div className="forms-line">
+              <div className="form-line form-btn">
+                <button type="button" className="cancel-btn" onClick={closeEditPopup}>
                   Cancel
                 </button>
                 <button type="submit" className="save-btn">
@@ -993,6 +1027,8 @@ const Events = () => {
             </div>
           </form>
         </div>
+
+        {/* View Event Modal */}
         {showModal && selectedEvent && (
           <div className="viewPopup">
             <div className="modal-content">
@@ -1002,32 +1038,24 @@ const Events = () => {
               </span>
               <div className="viewPopup-content">
                 <p>
-                  <strong>Event Name:</strong> {selectedEvent.name}
+                  <strong>Event Name:</strong> {selectedEvent.title}
                 </p>
                 <p>
-                  <strong>Project Description:</strong>{" "}
-                  {selectedEvent.description}
+                  <strong>Project Description:</strong> {selectedEvent.description}
                 </p>
                 <div className="view-row">
                   <p>
-                    <strong>Event Date & Time:</strong> {selectedEvent.dateTime}
+                    <strong>Event Date & Time:</strong> {`${selectedEvent.date} ${selectedEvent.time}`}
                   </p>
                   <p>
                     <strong>Event Link:</strong>{" "}
-                    <a
-                      href={selectedEvent.link}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {selectedEvent.link}
+                    <a href={selectedEvent.joining_link} target="_blank" rel="noreferrer">
+                      {selectedEvent.joining_link}
                     </a>
                   </p>
                 </div>
                 <div className="viewEdit-btn">
-                  <button
-                    className="edit-btn"
-                    onClick={() => handleEdit(selectedEvent.id)}
-                  >
+                  <button className="edit-btn" onClick={() => handleEdit(selectedEvent.id)}>
                     <img
                       src="https://admin.aspiraskillhub.aspirasys.com/images/edit-project.png"
                       alt="edit-project.png"

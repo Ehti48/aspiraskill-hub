@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import styled from "styled-components";
 import Heading from "../Heading";
 import newRegData from "./NewRegApi";
+import Button from "../Button";
 
 const Wrapper = styled.section`
   /* Container */
@@ -336,19 +337,6 @@ const Wrapper = styled.section`
     align-items: center;
     gap: 10px;
   }
-  .pagination button {
-    background-color: #f1f1f1;
-    color: black;
-    float: left;
-    padding: 8px 16px;
-    text-decoration: none;
-    transition: background-color 0.3s;
-    border: 1px solid #ddd;
-  }
-  .pagination button.active {
-    background-color: #4caf50;
-    color: white;
-  }
   @media (max-width: 1429px) {
     .mail-popup {
       justify-content: center;
@@ -405,7 +393,6 @@ const NewRegisteration = () => {
 
   const [filteredAspirants, setFilteredAspirants] = useState(aspirants);
   const [currentPage, setCurrentPage] = useState(1);
-  const aspirantsPerPage = 10;
 
   const handleSearchClick = () => {
     const results = aspirants.filter((aspirant) => {
@@ -413,8 +400,8 @@ const NewRegisteration = () => {
         (search.date ? aspirant.date.includes(search.date) : true) &&
         (search.fullName
           ? aspirant.fullName
-              .toLowerCase()
-              .includes(search.fullName.toLowerCase())
+            .toLowerCase()
+            .includes(search.fullName.toLowerCase())
           : true) &&
         (search.mode ? aspirant.mode === search.mode : true) &&
         (search.session ? aspirant.session === search.session : true) &&
@@ -449,14 +436,10 @@ const NewRegisteration = () => {
     document.querySelector(".mail-popup").style.display = "none";
   };
 
-  const indexOfLastAspirant = currentPage * aspirantsPerPage;
-  const indexOfFirstAspirant = indexOfLastAspirant - aspirantsPerPage;
-  const currentAspirants = filteredAspirants.slice(
-    indexOfFirstAspirant,
-    indexOfLastAspirant
-  );
-
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+  const pages = Math.ceil(filteredAspirants.length / 10);
+  const start = (currentPage - 1) * 10;
+  const end = start + 10;
+  const paginatedAspirants = filteredAspirants.slice(start, end); // Use filtered list
 
   return (
     <Wrapper>
@@ -594,10 +577,10 @@ const NewRegisteration = () => {
               </tr>
             </thead>
             <tbody>
-              {currentAspirants.length > 0 ? (
-                currentAspirants.map((aspirant, index) => (
+              {filteredAspirants.length > 0 ? (
+                paginatedAspirants.map((aspirant, index) => (
                   <tr key={aspirant.id}>
-                    <td>{indexOfFirstAspirant + index + 1}</td>
+                    <td>{currentPage * index + 1}</td>
                     <td>{aspirant.date}</td>
                     <td>{aspirant.fullName}</td>
                     <td>{aspirant.mode}</td>
@@ -627,51 +610,42 @@ const NewRegisteration = () => {
               )}
             </tbody>
           </table>
-          <div
-            className="pagination"
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              alignItems: "center",
-              margin: "20px 0 0 0",
-            }}
-          >
-            <button
+          {filteredAspirants.length > 10 && (
+            <div className="pagination">
+            <Button
               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              style={{
-                padding: "8px 15px",
-                border: "none",
-                borderRadius: "5px",
-                backgroundColor: "#3282c4",
-                color: "white",
-                cursor: "pointer",
-              }}
+              style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
               disabled={currentPage === 1}
             >
               Prev
-            </button>
-            <span style={{ margin: "0 10px" }}>
-              Page {currentPage} of {Math.ceil(aspirants.length / 10)}
-            </span>
-            <button
-              onClick={() =>
-                setCurrentPage((prev) =>
-                  Math.min(prev + 1, Math.ceil(aspirants.length / 10))
-                )
-              }
-              style={{
-                padding: "8px 15px",
-                border: "none",
-                borderRadius: "5px",
-                backgroundColor: "#3282c4",
-                color: "white",
-                cursor: "pointer",
-              }}
-              disabled={currentPage === Math.ceil(aspirants.length / 10)}
+            </Button>
+            {[...Array(pages)].map((_, i) => (
+              <button
+                key={i + 1}
+                onClick={() => setCurrentPage(i + 1)}
+                style={{
+                  padding: '8px 16px',
+                  border: 'none',
+                  borderRadius: '5px',
+                  backgroundColor: currentPage === i + 1 ? '#3282c4' : 'transparent', // Active color changed
+                  color: currentPage === i + 1 ? 'white' : '#3282c4',
+                  cursor: 'pointer',
+                  margin: '0 5px',
+                  boxShadow: currentPage === i + 1 ? 'none' : 'rgba(0, 0, 0, 0.2) 0px 0px 1px 1px',
+                }}
+              >
+                {i + 1}
+              </button>
+            ))}
+            <Button
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pages))}
+              style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
+              disabled={currentPage === pages}
             >
               Next
-            </button>
+            </Button>
           </div>
+          )}
         </div>
       </div>
     </Wrapper>

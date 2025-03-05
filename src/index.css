@@ -21,3 +21,11 @@ input, select, textarea {
     font-family: "Poppins", sans-serif;
     font-weight: 400;
 }
+
+.cut-text { 
+    text-overflow: ellipsis;
+    overflow: hidden; 
+    width: 160px; 
+    height: auto; 
+    white-space: nowrap;
+}

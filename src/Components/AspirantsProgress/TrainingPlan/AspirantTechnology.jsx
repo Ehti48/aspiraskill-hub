@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
-import Heading from '../../Heading';
+import Heading from '../../../Components/Heading';
 import { NavLink, Link, useLocation } from 'react-router-dom';
-import Button from '../../Button';
+import Button from '../../../Components/Button';
 import { MdKeyboardArrowRight } from "react-icons/md";
+import axios from 'axios';
 
 const Wrapper = styled.section`
   .dateSec {
@@ -264,8 +265,8 @@ const Wrapper = styled.section`
     border-radius: 8px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     z-index: 1000;
-    width: 90%;
-    max-width: 500px;
+    width: 400px;
+    max-width: 90%;
     height: auto;
     align-items: start;
     justify-content: space-between;
@@ -294,7 +295,6 @@ const Wrapper = styled.section`
   .modal-header {
     width: 100%;
     display: flex;
-    justify-content: flex-end;
     align-items: center;
     margin-bottom: 30px;
     padding-bottom: 10px;
@@ -308,7 +308,15 @@ const Wrapper = styled.section`
       background: none;
       color: #252e4a99;
       border: none;
+      position: absolute;
+      top: 20px;
+      right: 20px;
     }
+  }
+
+  .delete {
+    margin-bottom: 0 !important;
+    border: none !important;
   }
 
   .del-icon {
@@ -352,6 +360,7 @@ const Wrapper = styled.section`
     gap: 10px;
 
     &.delete {
+      border: none !important;
       margin: 20px 0 0 0;
       justify-content: center;
       gap: 30px;
@@ -398,10 +407,16 @@ const Wrapper = styled.section`
 
 
 const AspirantTecnology = () => {
-  const [students, setStudents] = useState([]);
+  const [tech, setTech] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newTech, setNewTech] = useState({});
+  const [newTech, setNewTech] = useState({
+    techName: '',
+    techId: '',
+    stages: '',
+    projects: '',
+    materials: ''
+  });
   const [deleteIndex, setDeleteIndex] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [techIdError, setTechIdError] = useState('');
@@ -411,35 +426,44 @@ const AspirantTecnology = () => {
   const studentId = location.state?.studentId;
   const studentName = location.state?.studentName;
 
-  //dummy data//
+  // Fetch data from API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.get(
+          "http://localhost:48857/api/admin/aspirant/2/technologies"
+        );
+
+        console.log("API Full Response:", response);
+
+        if (!response.data || !Array.isArray(response.data)) {
+          console.error("Unexpected API response format:", response.data);
+          return;
+        }
+
+        setTech(response.data);
+      } catch (err) {
+        console.error("Error fetching technologies:", err.message);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const techDetails = {
-    'Basic Web Technology': { techId: 'ASPT0001', stages: '3', projects: '10', materials: '100' },
-    'Asp Dot Net': { techId: 'ASPT0002', stages: '5', projects: '12', materials: '150' },
-    'Python': { techId: 'ASPT0003', stages: '4', projects: '15', materials: '120' },
-    'Java': { techId: 'ASPT0004', stages: '6', projects: '20', materials: '200' },
-    'Node JS': { techId: 'ASPT0005', stages: '4', projects: '10', materials: '100' },
-    'React JS': { techId: 'ASPT0006', stages: '5', projects: '15', materials: '150' },
-    'Angular JS': { techId: 'ASPT0007', stages: '6', projects: '18', materials: '180' },
-    'Full Stack': { techId: 'ASPT0008', stages: '8', projects: '25', materials: '250' },
-    'Digital Marketing': { techId: 'ASPT0009', stages: '3', projects: '8', materials: '80' },
-    'Flutter': { techId: 'ASPT0010', stages: '4', projects: '12', materials: '120' },
+    'Basic Web Technology': { techId: '1', stages: '3', projects: '10', materials: '100' },
+    'Asp Dot Net': { techId: '2', stages: '5', projects: '12', materials: '150' },
+    'Python': { techId: '3', stages: '3', projects: '7', materials: '50' },
+    'Java': { techId: '4', stages: '5', projects: '10', materials: '100' },
+    'JavaScript': { techId: '5', stages: '3', projects: '8', materials: '80' },
+    'C++': { techId: '6', stages: '4', projects: '9', materials: '120' },
   };
-
-
 
   const handleSearchChange = (e) => setSearchQuery(e.target.value);
 
-  useEffect(() => {
-    const storedStudents = localStorage.getItem('students');
-    if (storedStudents) {
-      setStudents(JSON.parse(storedStudents));
-    }
-  }, []);
-
   const handleTechChange = (e) => {
     const selectedTech = e.target.value;
-    const techInfo = techDetails[selectedTech] || { stages: '0', projects: '0', materials: '0' };
+    const techInfo = techDetails[selectedTech] || { techId: "", stages: "0", projects: "0", materials: "0" };
     setNewTech({
       ...newTech,
       techName: selectedTech,
@@ -450,35 +474,86 @@ const AspirantTecnology = () => {
     });
   };
 
-  const handleAddTrainingPlan = () => {
+  const handleAddTrainingPlan = async () => {
     if (!newTech.techName) {
-      alert('Please fill all fields');
+      alert("Please select a technology");
       return;
     }
 
-    setTechIdError('');
+    try {
+      // Prepare the data to match the backend expectations
+      const requestData = {
+        technology_id: newTech.techId, // Use techId as technology_id
+        language_id: 1, // Assuming language_id is required (you can make this dynamic)
+      };
 
-    const updatedStudents = [...students, newTech];
-    setStudents(updatedStudents);
+      // Make the POST request
+      const response = await axios.post(
+        `http://localhost:48857/api/admin/aspirant/2/technologies`, // Use dynamic studentId
+        requestData
+      );
 
-    // Save to Local Storage
-    localStorage.setItem('students', JSON.stringify(updatedStudents));
+      if (response.status === 201 || response.status === 200) {
 
-    setIsModalOpen(false);
-    setNewTech('');
+        // alert("Training plan added successfully!");
+        const updatedResponse = await axios.get(
+          `http://localhost:48857/api/admin/aspirant/2/technologies`
+        );
+
+        // Update the local state with the new data
+        setTech(updatedResponse.data);
+
+        // Reset the form
+        setNewTech({
+          techName: "",
+          techId: "",
+          stages: "",
+          projects: "",
+          materials: "",
+        });
+
+        // Close the modal
+        setIsModalOpen(false);
+      } else {
+        alert("Failed to add training plan. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error adding training plan:", error);
+      alert(
+        `Error adding training plan: ${error.response?.data?.message || error.message
+        }`
+      );
+    }
   };
 
   const handleCancel = () => {
-    setIsModalOpen(false)
-    setNewTech('')
-  }
+    setIsModalOpen(false);
+    setNewTech({
+      techName: "",
+      techId: "",
+      stages: "",
+      projects: "",
+      materials: ""
+    });
+  };
 
-  const handleDelete = () => {
-    const updatedStudents = students.filter((_, i) => i !== deleteIndex);
-    setStudents(updatedStudents);
+  const handleDelete = async () => {
+    try {
+      await axios.delete(
+        `http://localhost:48857/api/admin/aspirant/2/technologies/2`
+      );
 
-    localStorage.setItem('students', JSON.stringify(updatedStudents));
-    setIsDeleteModalOpen(false);
+      const updatedStudents = tech.filter((_, i) => i !== deleteIndex);
+      setTech(updatedStudents);
+      localStorage.setItem('tech', JSON.stringify(updatedStudents));
+      setIsDeleteModalOpen(false);
+    } catch (error) {
+      console.error("Error deleting technology:", error);
+      alert(
+        `Error deleting technology: ${error.response?.data?.message || error.message
+        }`
+      );
+    }
   };
 
   const openDeleteModal = (index) => {
@@ -486,14 +561,16 @@ const AspirantTecnology = () => {
     setIsDeleteModalOpen(true);
   };
 
-  const filteredStudents = students.filter(
-    (tech) => tech.techId || tech.techName
+  const filteredTech = tech.filter(
+    (t) =>
+      (t.techId && t.techId.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (t.technology && t.technology.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const pages = Math.ceil(filteredStudents.length / 10);
+  const pages = Math.ceil(filteredTech.length / 10);
   const start = (currentPage - 1) * 10;
   const end = start + 10;
-  const paginatedTechStacks = filteredStudents.slice(start, end);
+  const paginatedTechStacks = filteredTech.slice(start, end);
 
   return (
     <Wrapper>
@@ -511,7 +588,7 @@ const AspirantTecnology = () => {
               <select
                 name="techName"
                 id="techName"
-                value={newTech.techName}
+                value={newTech.techName} // Use techName instead of technology
                 onChange={handleTechChange}
               >
                 <option value="">Select Technology Name</option>
@@ -523,14 +600,17 @@ const AspirantTecnology = () => {
               </select>
             </div>
             <div className="input-group">
-              <label htmlFor="Language">Language</label>
+              <label htmlFor="language">Language</label>
               <select
-                name='Language'
+                name="language"
+                id="language"
+                value={newTech.language_id}
+                onChange={(e) => setNewTech({ ...newTech, language_id: e.target.value })}
               >
-                <option value="Select Language">Select Language</option>
-                <option value="English">English</option>
-                <option value="Hindi">Hindi</option>
-                <option value="Tamil">Tamil</option>
+                <option value="">Select Language</option>
+                <option value="1">English</option>
+                <option value="2">Hindi</option>
+                <option value="3">Tamil</option>
               </select>
             </div>
             <div className="modal-detail">
@@ -562,11 +642,11 @@ const AspirantTecnology = () => {
             <div className="modal-header delete">
               <button onClick={() => setIsDeleteModalOpen(false)}>✖</button>
             </div>
-            <div class="del-icon">
+            <div className="del-icon">
               <img src="https://admin.aspiraskillhub.aspirasys.com/images/mdi_trash.png" alt="delete" />
             </div>
-            <p>Are you sure?</p>
-            <span>To delete {students[deleteIndex]?.techName || 'this technology'}?</span>
+            <p>Are you sure?</ p>
+            <span>To delete {tech[deleteIndex]?.techName || 'this technology'}?</span>
             <div className="modal-footer delete">
               <Button onClick={() => setIsDeleteModalOpen(false)}>Cancel</Button>
               <Button onClick={handleDelete}>Delete</Button>
@@ -582,7 +662,6 @@ const AspirantTecnology = () => {
               <Link to={{ pathname: "/admin/aspirants-progress", search: "?page=trainingPlan" }}>
                 Training Plan
               </Link>
-
             </li>
             <MdKeyboardArrowRight />
             <li className="breadcrumb-item active" aria-current="page">
@@ -626,20 +705,20 @@ const AspirantTecnology = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredStudents.length > 0 ? (
-                    paginatedTechStacks.map((student, index) => (
+                  {tech.length > 0 ? (
+                    paginatedTechStacks.map((tech, index) => (
                       <tr className="odd" key={index}>
                         <td className="num">{(currentPage - 1) * 10 + index + 1}</td>
-                        <td>{student.techId}</td>
-                        <td>{student.techName}</td>
-                        <td>{student.stages}</td>
-                        <td>-</td>
+                        <td>{tech.technology_id}</td>
+                        <td>{tech.technology}</td>
+                        <td>{tech.no_stages}</td>
+                        <td>{tech.completion_percentage}%</td>
                         <td className="stack-output">
                           <NavLink
                             to="/admin/aspirants-progress/stages"
                             state={{
-                              techId: student.techId,
-                              techName: student.techName,
+                              techId: tech.technology_id,
+                              techName: tech.technology,
                               studentId: studentId,
                             }}
                           >
@@ -669,23 +748,42 @@ const AspirantTecnology = () => {
             </div>
           </div>
         </div>
-      <div className="pagination">
-        <Button
-          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-          style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
-          disabled={currentPage === 1}
-        >
-          Prev
-        </Button>
-        <span style={{ margin: '0 10px' }}>Page {currentPage} of {pages}</span>
-        <Button
-          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pages))}
-          style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
-          disabled={currentPage === pages}
-        >
-          Next
-        </Button>
-      </div>
+        {tech.length > 10 && (
+          <div className="pagination">
+            <Button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
+              disabled={currentPage === 1}
+            >
+              Prev
+            </Button>
+            {[...Array(pages)].map((_, i) => (
+              <button
+                key={i + 1}
+                onClick={() => setCurrentPage(i + 1)}
+                style={{
+                  padding: '8px 16px',
+                  border: 'none',
+                  borderRadius: '5px',
+                  backgroundColor: currentPage === i + 1 ? '#3282c4' : 'transparent', // Active color changed
+                  color: currentPage === i + 1 ? 'white' : '#3282c4',
+                  cursor: 'pointer',
+                  margin: '0 5px',
+                  boxShadow: currentPage === i + 1 ? 'none' : 'rgba(0, 0, 0, 0.2) 0px 0px 1px 1px',
+                }}
+              >
+                {i + 1}
+              </button>
+            ))}
+            <Button
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pages))}
+              style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
+              disabled={currentPage === pages}
+            >
+              Next
+            </Button>
+          </div>
+        )}
       </div>
     </Wrapper>
   );

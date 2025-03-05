@@ -13,7 +13,7 @@ const Wrapper = styled.section`
   }
 
   .breadCrumb {
-    font-size: 18px;
+    font-size: 16px;
     display: flex;
     align-items: center;
 
@@ -308,7 +308,7 @@ const Wrapper = styled.section`
   }
 
 
-  @media (min-width: 1350px) {
+  @media (min-width: 1440px) {
     .breadCrumb {
         font-size: 20px !important;
     }

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import Heading from '../../Heading';
 import { NavLink } from 'react-router-dom';
 import Button from '../../Button';
+import axios from 'axios';
 
 const Wrapper = styled.section`
   .dateSec {
@@ -170,7 +171,7 @@ const Wrapper = styled.section`
     height: 40px;
     display: grid;
     padding-left: 15px;
-    grid-template-columns: 0.3fr 0.7fr 1.5fr 1.5fr 1fr 1fr 0.8fr !important;
+    grid-template-columns: 0.3fr 0.7fr 1.5fr 1.5fr 1fr 1.5fr 1fr !important;
     border: 1px solid #cbcbcb;
     border-top: none;
     justify-content: space-evenly;
@@ -264,22 +265,7 @@ const Wrapper = styled.section`
 `;
 
 const Timesheet = () => {
-  const [students, setStudents] = useState([
-    { id: 'ASP0244', name: 'Ibrahim K', technology: 'Basic Web Technology', mode: '-', status: '-', date: '2024-11-05', gender: 'Male' },
-    { id: 'ASP0245', name: 'Iqhyan', technology: 'React JS', mode: '-', status: '-', date: '2024-10-15', gender: 'Male' },
-    { id: 'ASP0246', name: 'Asma', technology: 'Node JS', mode: '-', status: '-', date: '2024-11-05', gender: 'Female' },
-    { id: 'ASP0247', name: 'Safwa', technology: 'Node JS', mode: '-', status: '-', date: '2024-10-15', gender: 'Female' },
-    { id: 'ASP0248', name: 'Ali', technology: 'Python', mode: '-', status: '-', date: '2024-10-20', gender: 'Male' },
-    { id: 'ASP0249', name: 'Fatima', technology: 'Java', mode: '-', status: '-', date: '2024-10-22', gender: 'Female' },
-    { id: 'ASP0250', name: 'Omar', technology: 'Angular', mode: '-', status: '-', date: '2024-11-01', gender: 'Male' },
-    { id: 'ASP0251', name: 'Zara', technology: 'Vue JS', mode: '-', status: '-', date: '2024-11-11', gender: 'Female' },
-    { id: 'ASP0252', name: 'Ahmed', technology: 'Django', mode: '-', status: '-', date: '2024-10-25', gender: 'Male' },
-    { id: 'ASP0253', name: 'Aisha', technology: 'Ruby on Rails', mode: '-', status: '-', date: '2024-11-15', gender: 'Female' },
-    { id: 'ASP0254', name: 'Yusuf', technology: 'C#', mode: '-', status: '-', date: '2024-10-30', gender: 'Male' },
-    { id: 'ASP0255', name: 'Maryam', technology: 'PHP', mode: '-', status: '-', date: '2024-11-03', gender: 'Female' },
-    { id: 'ASP0256', name: 'Hassan', technology: 'Swift', mode: '-', status: '-', date: '2024-10-28', gender: 'Male' },
-    { id: 'ASP0257', name: 'Layla', technology: 'Kotlin', mode: '-', status: '-', date: '2024-11-08', gender: 'Female' },
-  ]);
+  const [students, setStudents] = useState([]);
 
   const [filteredStudents, setFilteredStudents] = useState(students); // Store filtered students
   const [searchQuery, setSearchQuery] = useState('');
@@ -289,33 +275,43 @@ const Timesheet = () => {
   const [selectedMonth, setSelectedMonth] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
 
-  const handleSearchChange = (e) => setSearchQuery(e.target.value);
+  useEffect(() => {
+    const fetchTimesheets = async () => {
+      try {
+        const response = await axios.get('http://localhost:48857/api/admin/aspirants-progress');
+        console.log('API Response:', response.data);
+        const data = response.data || [];
+        setStudents(data);
+        setFilteredStudents(data);
+      } catch (error) {
+        console.error('Error fetching students:', error.message);
+      }
+    };
 
-  const handleReset = () => {
-    document.querySelectorAll('form').forEach((form) => form.reset());
-    setSearchQuery('');
-    setDateFrom('');
-    setDateTo('');
-    setSelectedMonth('');
-    setSelectedCategory('');
-    setFilteredStudents(students); // Reset filtered students
-  };
+    fetchTimesheets();
+  }, []);
 
   const handleSearchClick = () => {
-    const filtered = students.filter((student) => {
-      const searchMatch =
-        student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        student.id.toLowerCase().includes(searchQuery.toLowerCase());
+    const filteredData = filteredStudents.filter((student) => {
 
-      const dateFromMatch = dateFrom ? new Date(student.date) >= new Date(dateFrom) : true;
-      const dateToMatch = dateTo ? new Date(student.date) <= new Date(dateTo) : true;
-      const monthMatch = selectedMonth ? student.date.split('-')[1] === selectedMonth : true;
-      const categoryMatch = selectedCategory ? student.technology === selectedCategory : true;
+      const doesStudentDateFallInRange =
+        (!dateFrom || new Date(student.date) >= new Date(dateFrom)) &&
+        (!dateTo || new Date(student.date) <= new Date(dateTo));
 
-      return searchMatch && dateFromMatch && dateToMatch && monthMatch && categoryMatch;
+      const doesStudentMonthMatchSelectedMonth =
+        !selectedMonth || student.date.split('-')[1] === selectedMonth;
+
+      const doesStudentCategoryMatchSelectedCategory =
+        !selectedCategory || student.technology_id === selectedCategory;
+
+      return (
+        doesStudentDateFallInRange &&
+        doesStudentMonthMatchSelectedMonth &&
+        doesStudentCategoryMatchSelectedCategory
+      );
     });
 
-    setFilteredStudents(filtered); // Update filtered students
+    setFilteredStudents(filteredData);
   };
 
   const handleDateFromChange = (e) => setDateFrom(e.target.value);
@@ -338,6 +334,29 @@ const Timesheet = () => {
     );
     setFilteredStudents(filtered);
   };
+
+  const handleReset = () => {
+    setSearchQuery('');
+    setDateFrom('');
+    setDateTo('');
+    setSelectedMonth('');
+    setSelectedCategory('');
+    setSelectedGender('');
+    setFilteredStudents(students); // Reset filtered students
+  };
+
+  const handleSearchChange = (query) => {
+    setSearchQuery(query);
+
+    const filtered = students.filter((student) =>
+      student.full_name.toLowerCase().includes(query.toLowerCase()) ||
+      student.technology_id.toLowerCase().includes(query.toLowerCase()) ||
+      student.aspirant_id.toString().includes(query)
+    );
+
+    setFilteredStudents(filtered);
+  };
+
 
   const pages = Math.ceil(filteredStudents.length / 10);
   const start = (currentPage - 1) * 10;
@@ -467,7 +486,7 @@ const Timesheet = () => {
                 type="text"
                 placeholder="Search"
                 value={searchQuery}
-                onChange={handleSearchChange}
+                onChange={(e) => handleSearchChange(e.target.value)}
               />
             </div>
             <Button className="exportBtn">
@@ -492,15 +511,15 @@ const Timesheet = () => {
                   paginatedTechStacks.map((student, index) => (
                     <tr className="odd" key={index}>
                       <td>{(currentPage - 1) * 10 + index + 1}</td>
-                      <td>{student.id}</td>
-                      <td>{student.name}</td>
+                      <td>{student.aspirant_id}</td>
+                      <td>{student.full_name}</td>
                       <td>{student.technology}</td>
                       <td>{student.mode}</td>
-                      <td>{student.status}</td>
+                      <td className='cut-text'>{student.last_status}</td>
                       <td className="stack-output">
                         <NavLink
                           to='/admin/aspirants-progress/timesheet-detail'
-                          state={{ studentId: student.id, studentName: student.name }}
+                          state={{ studentId: student.aspirant_id, studentName: student.full_name }}
                         >
                           <button>
                             <img src="https://admin.aspiraskillhub.aspirasys.com/images/eye.png" alt="View" />
@@ -508,7 +527,7 @@ const Timesheet = () => {
                         </NavLink>
                         <NavLink
                           to='/admin/aspirants-progress/productive-students'
-                          state={{ studentId: student.id, studentName: student.name }}
+                          state={{ studentId: student.aspirant_id, studentName: student.full_name }}
                         >
                           <button className="btn re-submit">
                             <span>
@@ -524,29 +543,47 @@ const Timesheet = () => {
                     <td colSpan="7" className="no-data"> No data available in the table</td>
                   </tr>
                 )}
-
               </tbody>
             </table>
           </div>
         </div>
       </div>
-      <div className="pagination">
-        <Button
-          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-          style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
-          disabled={currentPage === 1}
-        >
-          Prev
-        </Button>
-        <span style={{ margin: '0 10px' }}>Page {currentPage} of {pages}</span>
-        <Button
-          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pages))}
-          style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
-          disabled={currentPage === pages}
-        >
-          Next
-        </Button>
-      </div>
+      {filteredStudents.length > 10 && (
+        <div className="pagination">
+          <Button
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
+            disabled={currentPage === 1}
+          >
+            Prev
+          </Button>
+          {[...Array(pages)].map((_, i) => (
+            <button
+              key={i + 1}
+              onClick={() => setCurrentPage(i + 1)}
+              style={{
+                padding: '8px 16px',
+                border: 'none',
+                borderRadius: '5px',
+                backgroundColor: currentPage === i + 1 ? '#3282c4' : 'transparent', // Active color changed
+                color: currentPage === i + 1 ? 'white' : '#3282c4',
+                cursor: 'pointer',
+                margin: '0 5px',
+                boxShadow: currentPage === i + 1 ? 'none' : 'rgba(0, 0, 0, 0.2) 0px 0px 1px 1px',
+              }}
+            >
+              {i + 1}
+            </button>
+          ))}
+          <Button
+            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pages))}
+            style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
+            disabled={currentPage === pages}
+          >
+            Next
+          </Button>
+        </div>
+      )}
     </Wrapper>
   );
 };

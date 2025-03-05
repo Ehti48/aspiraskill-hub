@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import styled from 'styled-components';
-import Heading from '../../Heading';
-import { Link, useLocation } from 'react-router-dom';
-import Button from '../../Button';
+import React, { useState, useEffect } from "react";
+import styled from "styled-components";
+import Heading from "../../../Components/Heading";
+import { Link, useLocation } from "react-router-dom";
+import Button from "../../../Components/Button";
 import { MdKeyboardArrowRight } from "react-icons/md";
+import axios from "axios";
 
 const Wrapper = styled.section`
   .dateSec {
@@ -219,7 +220,7 @@ const Wrapper = styled.section`
     height: 45px;
     padding-left: 10px;
     display: grid;
-    grid-template-columns: 0.3fr 0.7fr 1fr 3fr 0.5fr 0.5fr!important;
+    grid-template-columns: 0.3fr 1.7fr 1fr 3fr 1fr 1.5fr!important;
     border: 1px solid #cbcbcb;
     border-top: none;
     justify-content: space-evenly;
@@ -245,6 +246,14 @@ const Wrapper = styled.section`
       color: #252e4a99;
       font-weight: 500;
     }
+  }
+
+  .cut-text { 
+    text-overflow: ellipsis;
+    overflow: hidden; 
+    width: 160px; 
+    height: auto; 
+    white-space: nowrap;
   }
 
     .odd2 {
@@ -360,11 +369,17 @@ const Wrapper = styled.section`
     color: #0078d7;
     text-decoration: none;
   }
-      .pagination {
+  .pagination {
     display: flex;
     justify-content: flex-end;
     align-items: center;
     gap: 10px;
+  }
+
+  @media (min-width: 1500px) {
+    .odd td {
+      font-size: 16px !important;
+    }
   }
 
   @media (max-width: 650px) {
@@ -389,45 +404,26 @@ const Wrapper = styled.section`
 `;
 
 const TimesheetDetail = () => {
+  const [students, setStudents] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [dateTo, setDateTo] = useState("");
+  const [category, setCategory] = useState("");
+  const [month, setMonth] = useState("");
+  const [hours, setHours] = useState("");
+  const [filteredStudents, setFilteredStudents] = useState([]);
+
   const handleReset = () => {
-    document.querySelectorAll('form').forEach((form) => form.reset());
-    setSearchQuery('');
-    setDateFrom('');
-    setDateTo('');
-    setCategory('');
-    setMonth('');
-    setHours('');
+    document.querySelectorAll("form").forEach((form) => form.reset());
+    setSearchQuery("");
+    setDateFrom("");
+    setDateTo("");
+    setCategory("");
+    setMonth("");
+    setHours("");
     setFilteredStudents(students);
   };
-
-  const [students, setStudents] = useState([
-    { date: '2024-06-01', activity: 'Productive Effort', description: '-', hours: '08', link: '-' },
-    { date: '2024-07-01', activity: 'Leave', description: '-', hours: '08', link: '-' },
-    { date: '2024-08-01', activity: 'System/Power issue', description: '-', hours: '02', link: '-' },
-    { date: '2024-09-01', activity: 'Leave', description: '-', hours: '08', link: '-' },
-    { date: '2024-10-01', activity: 'Permission', description: '-', hours: '02', link: '-' },
-    { date: '2024-11-01', activity: 'Permission', description: '-', hours: '04', link: '-' },
-    { date: '2024-12-01', activity: 'Productive Effort', description: '-', hours: '08', link: '-' },
-    { date: '2024-12-07', activity: 'Leave', description: '-', hours: '08', link: '-' },
-    { date: '2024-01-01', activity: 'Meeting', description: '-', hours: '04', link: '-' },
-    { date: '2024-02-01', activity: 'Training', description: '-', hours: '08', link: '-' },
-    { date: '2024-03-01', activity: 'Support', description: '-', hours: '02', link: '-' },
-    { date: '2024-04-01', activity: 'Permission', description: '-', hours: '04', link: '-' },
-    { date: '2024-05-01', activity: 'Productive Effort', description: '-', hours: '08', link: '-' },
-    { date: '2024-06-01', activity: 'Leave', description: '-', hours: '08', link: '-' },
-    { date: '2024-07-01', activity: 'System/Power issue', description: '-', hours: '02', link: '-' },
-    { date: '2024-08-01', activity: 'Permission', description: '-', hours: '04', link: '-' },
-    { date: '2024-09-01', activity: 'Productive Effort', description: '-', hours: '08', link: '-' },
-    { date: '2024-10-01', activity: 'Meeting', description: '-', hours: '04', link: '-' },
-  ]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [dateTo, setDateTo] = useState('');
-  const [category, setCategory] = useState('');
-  const [month, setMonth] = useState('');
-  const [hours, setHours] = useState('');
-  const [filteredStudents, setFilteredStudents] = useState(students);
 
   const handleSearchChange = (e) => setSearchQuery(e.target.value);
   const handleDateFromChange = (e) => setDateFrom(e.target.value);
@@ -440,18 +436,39 @@ const TimesheetDetail = () => {
   const studentId = location.state?.studentId;
   const studentName = location.state?.studentName;
 
+  useEffect(() => {
+    const fetchTimesheet = async () => {
+      try {
+        const response = await axios.get(
+          "http://localhost:48857/api/admin/timesheets"
+        );
+        console.log("API Response:", response.data?.timesheets);
+        const data = response.data?.timesheets || [];
+        console.log("Formatted Data:", data);
+        setStudents(data);
+        setFilteredStudents(data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+    fetchTimesheet();
+  }, []);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const filteredData = students.filter((student) => {
       const dateMatch =
         (!dateFrom || new Date(student.date) >= new Date(dateFrom)) &&
         (!dateTo || new Date(student.date) <= new Date(dateTo));
-      const categoryMatch = !category || student.activity.toLowerCase().includes(category.toLowerCase());
+      const categoryMatch =
+        !category ||
+        student.type.toLowerCase().includes(category.toLowerCase());
       const monthMatch = !month || student.date.includes(month);
       const hoursMatch = !hours || student.hours === hours;
 
       return (
-        (student.date.toLowerCase().includes(searchQuery.toLowerCase()) || student.activity.toLowerCase().includes(searchQuery.toLowerCase())) &&
+        (student.date.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          student.type.toLowerCase().includes(searchQuery.toLowerCase())) &&
         dateMatch &&
         categoryMatch &&
         monthMatch &&
@@ -462,16 +479,22 @@ const TimesheetDetail = () => {
     setFilteredStudents(filteredData); // Set filtered students after button click
   };
 
+  const handleSearchClick = () => {
+    handleSubmit(new Event("submit"));
+  };
+
   const handleSearch = (e) => {
-    const { value } = e.target;
+    const value = e.target.value;
+    setSearchQuery(value);
+
     const filteredData = students.filter((student) => {
       const dateMatch = student.date.toLowerCase().includes(value.toLowerCase());
-      const categoryMatch = student.activity.toLowerCase().includes(value.toLowerCase());
+      const categoryMatch = student.type.toLowerCase().includes(value.toLowerCase());
 
       return dateMatch || categoryMatch;
     });
 
-    setFilteredStudents(filteredData); // Set filtered students after search input change
+    setFilteredStudents(filteredData);
   };
 
   const pages = Math.ceil(filteredStudents.length / 10);
@@ -494,7 +517,9 @@ const TimesheetDetail = () => {
           </ol>
         </nav>
         <div className="usertime-id">
-          <p className="usertime-name">Aspirant : {studentId} - {studentName}</p>
+          <p className="usertime-name">
+            Aspirant : {studentId} - {studentName}
+          </p>
         </div>
       </div>
 
@@ -511,7 +536,10 @@ const TimesheetDetail = () => {
                 onChange={handleDateFromChange}
               />
               <div className="date-icon">
-                <img src="https://admin.aspiraskillhub.aspirasys.com/images/Calendar.png" alt="Calendar" />
+                <img
+                  src="https://admin.aspiraskillhub.aspirasys.com/images/Calendar.png"
+                  alt="Calendar"
+                />
               </div>
             </div>
             <div className="date-form">
@@ -524,23 +552,49 @@ const TimesheetDetail = () => {
                 onChange={handleDateToChange}
               />
               <div className="date-icon">
-                <img src="https://admin.aspiraskillhub.aspirasys.com/images/Calendar.png" alt="Calendar" />
+                <img
+                  src="https://admin.aspiraskillhub.aspirasys.com/images/Calendar.png"
+                  alt="Calendar"
+                />
               </div>
             </div>
             <div className="src-button">
-              <button type="submit">
-                <img src="https://admin.aspiraskillhub.aspirasys.com/images/search.png" alt="Search" />
+              <button type="button" onClick={handleSearchClick}>
+                <img
+                  src="https://admin.aspiraskillhub.aspirasys.com/images/search.png"
+                  alt="Search"
+                />
               </button>
             </div>
           </div>
-
           <div className="date-section">
             <div className="date-form">
               <label htmlFor="month">Month</label>
-              <select name="month" id="month" value={month} onChange={handleMonthChange}>
+              <select
+                name="month"
+                id="month"
+                value={month}
+                onChange={handleMonthChange}
+              >
                 <option value="">MM</option>
-                {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, index) => (
-                  <option value={String(index + 1).padStart(2, '0')} key={index}>
+                {[
+                  "Jan",
+                  "Feb",
+                  "Mar",
+                  "Apr",
+                  "May",
+                  "Jun",
+                  "Jul",
+                  "Aug",
+                  "Sep",
+                  "Oct",
+                  "Nov",
+                  "Dec",
+                ].map((month, index) => (
+                  <option
+                    value={String(index + 1).padStart(2, "0")}
+                    key={index}
+                  >
                     {month}
                   </option>
                 ))}
@@ -548,24 +602,38 @@ const TimesheetDetail = () => {
             </div>
             <div className="date-form">
               <label htmlFor="hours">Hours</label>
-              <select name="hours" id="hours" value={hours} onChange={handleHoursChange}>
+              <select
+                name="hours"
+                id="hours"
+                value={hours}
+                onChange={handleHoursChange}
+              >
                 <option value="">HH</option>
                 {[...Array(12).keys()].map((hour) => (
-                  <option value={String(hour).padStart(2, '0')} key={hour}>
-                    {String(hour).padStart(2, '0')}
+                  <option value={String(hour).padStart(2, "0")} key={hour}>
+                    {String(hour).padStart(2, "0")}
                   </option>
                 ))}
               </select>
             </div>
             <div className="date-form">
               <label htmlFor="category">Category</label>
-              <select name="category" id="category" value={category} onChange={handleCategoryChange}>
+              <select
+                name="category"
+                id="category"
+                value={category}
+                onChange={handleCategoryChange}
+              >
                 <option value="">Select Category</option>
                 {[
-                  'Productive Effort',
-                  'System/Power issue',
-                  'Leave',
-                  'Permission',
+                  "Productive Effort",
+                  "System/Power issue",
+                  "Leave",
+                  "Permission",
+                  "Assignment",
+                  "Project",
+                  "Other",
+                  "Practice",
                 ].map((category, index) => (
                   <option value={category} key={index}>
                     {category}
@@ -574,13 +642,25 @@ const TimesheetDetail = () => {
               </select>
             </div>
             <div className="src-button">
-              <button type="submit" >
-                <img src="https://admin.aspiraskillhub.aspirasys.com/images/search.png" alt="Search" />
+              <button
+                onClick={handleSubmit}
+              >
+                <img
+                  src="https://admin.aspiraskillhub.aspirasys.com/images/search.png"
+                  alt="Search"
+                />
               </button>
             </div>
             <div className="src-button">
-              <button type="button" className="reset-button" onClick={handleReset}>
-                <img src="https://admin.aspiraskillhub.aspirasys.com/images/rotate-left.png" alt="Reset" />
+              <button
+                type="button"
+                className="reset-button"
+                onClick={handleReset}
+              >
+                <img
+                  src="https://admin.aspiraskillhub.aspirasys.com/images/rotate-left.png"
+                  alt="Reset"
+                />
                 Reset
               </button>
             </div>
@@ -596,7 +676,7 @@ const TimesheetDetail = () => {
                 <input
                   type="text"
                   placeholder="Search"
-                  // value={searchQuery}
+                  value={searchQuery}
                   onChange={handleSearch}
                 />
               </div>
@@ -620,16 +700,16 @@ const TimesheetDetail = () => {
                     paginatedTechStacks.map((student, index) => (
                       <tr className="odd" key={index}>
                         <td>{(currentPage - 1) * 10 + index + 1}</td>
-                        <td>{student.date}</td>
-                        <td>{student.activity}</td>
-                        <td>{student.description}</td>
+                        <td className="cut-text">{student.date}</td>
+                        <td>{student.type}</td>
+                        <td className="cut-text">{student.description}</td>
                         <td>{student.hours}</td>
-                        <td>{student.link}</td>
+                        <td className="cut-text">{student.links}</td>
                       </tr>
                     ))
                   ) : (
-                    <tr className='odd odd2'>
-                      <td colSpan="7"> No data available in the table</td>
+                    <tr className="odd odd2">
+                      <td colSpan="7">No data available in the table</td>
                     </tr>
                   )}
                 </tbody>
@@ -637,23 +717,42 @@ const TimesheetDetail = () => {
             </div>
           </div>
         </div>
-      <div className="pagination">
-        <Button
-          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-          style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
-          disabled={currentPage === 1}
-        >
-          Prev
-        </Button>
-        <span style={{ margin: '0 10px' }}>Page {currentPage} of {pages}</span>
-        <Button
-          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pages))}
-          style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
-          disabled={currentPage === pages}
-        >
-          Next
-        </Button>
-      </div>
+        {filteredStudents.length > 10 && (
+          <div className="pagination">
+            <Button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
+              disabled={currentPage === 1}
+            >
+              Prev
+            </Button>
+            {[...Array(pages)].map((_, i) => (
+              <button
+                key={i + 1}
+                onClick={() => setCurrentPage(i + 1)}
+                style={{
+                  padding: '8px 16px',
+                  border: 'none',
+                  borderRadius: '5px',
+                  backgroundColor: currentPage === i + 1 ? '#3282c4' : 'transparent', // Active color changed
+                  color: currentPage === i + 1 ? 'white' : '#3282c4',
+                  cursor: 'pointer',
+                  margin: '0 5px',
+                  boxShadow: currentPage === i + 1 ? 'none' : 'rgba(0, 0, 0, 0.2) 0px 0px 1px 1px',
+                }}
+              >
+                {i + 1}
+              </button>
+            ))}
+            <Button
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pages))}
+              style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
+              disabled={currentPage === pages}
+            >
+              Next
+            </Button>
+          </div>
+        )}
       </div>
     </Wrapper>
   );

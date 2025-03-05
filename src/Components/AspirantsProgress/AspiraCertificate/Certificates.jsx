@@ -210,25 +210,25 @@ const Wrapper = styled.section`
 
 const Certificates = () => {
 
-    const [students, setStudents] = useState([
-        { id: 'ASPT0244', techName: 'Basic Web Tech', name: 'Ibrahim.K', certificate: '-', },
-        { id: 'ASPT0245', techName: 'React JS', name: 'Iqyan', certificate: '-', },
-    ]);
+  const [students, setStudents] = useState([
+    { id: 'ASPT0244', techName: 'Basic Web Tech', name: 'Ibrahim.K', certificate: '-', },
+    { id: 'ASPT0245', techName: 'React JS', name: 'Iqyan', certificate: '-', },
+  ]);
 
-    const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
-    const handleSearchChange = (e) => setSearchQuery(e.target.value);
+  const handleSearchChange = (e) => setSearchQuery(e.target.value);
 
-    const filteredStudents = students.filter(
-        (student) =>
-            student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            student.id.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+  const filteredStudents = students.filter(
+    (student) =>
+      student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      student.id.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-    return (
-        <Wrapper>
+  return (
+    <Wrapper>
 
-            {/* <nav aria-label="breadcrumb">
+      {/* <nav aria-label="breadcrumb">
           <ol className="breadcrumb ad-sck">
             <li className="breadcrumb-item">
               <Link to="/admin/aspirants-progress">
@@ -240,64 +240,64 @@ const Certificates = () => {
             </li>
           </ol>
         </nav> */}
-            <div className="dateSec">
-                <Heading title="Certificates" />
-                <div className="list-cont">
-                    <div className="container-2">
-                        <div className="header">
-                            <div className="searchBox">
-                                <input
-                                    type="text"
-                                    placeholder="Search"
-                                    value={searchQuery}
-                                    onChange={handleSearchChange}
-                                />
-                            </div>
-                            <Button className="exportBtn">
-                                Export XLS
-                            </Button>
-                        </div>
-                        <div className="tab">
-                        <table className="tab-cols">
-                            <thead>
-                                <tr className="odd odd1">
-                                    <td>#</td>
-                                    <td>Aspira ID</td>
-                                    <td>Technology Name</td>
-                                    <td>Name</td>
-                                    <td>Certificates</td>
-                                    <td>Action</td>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredStudents.map((student, index) => (
-                                    <tr className="odd" key={index}>
-                                        <td>{index + 1}</td>
-                                        <td>{student.id}</td>
-                                        <td>{student.techName}</td>
-                                        <td>{student.name}</td>
-                                        <td>{student.certificate}</td>
-                                        <td className="stack-output">
-                                            <NavLink 
-                                            to='/admin/aspirants-progress/aspirant-certificate'
-                                            state={{studentId: student.id, studentName: student.name}}
-                                            >
-                                                <button>
-                                                  <img src="https://admin.aspiraskillhub.aspirasys.com/images/eye.png"/>
-                                                </button>
-                                            </NavLink>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                        </div>
-                    </div>
-                </div>
+      <div className="dateSec">
+        <Heading title="Certificates" />
+        <div className="list-cont">
+          <div className="container-2">
+            <div className="header">
+              <div className="searchBox">
+                <input
+                  type="text"
+                  placeholder="Search"
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                />
+              </div>
+              <Button className="exportBtn">
+                Export XLS
+              </Button>
             </div>
+            <div className="tab">
+              <table className="tab-cols">
+                <thead>
+                  <tr className="odd odd1">
+                    <td>#</td>
+                    <td>Aspira ID</td>
+                    <td>Technology Name</td>
+                    <td>Name</td>
+                    <td>Certificates</td>
+                    <td>Action</td>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredStudents.map((student, index) => (
+                    <tr className="odd" key={index}>
+                      <td>{index + 1}</td>
+                      <td>{student.id}</td>
+                      <td>{student.techName}</td>
+                      <td>{student.name}</td>
+                      <td>{student.certificate}</td>
+                      <td className="stack-output">
+                        <NavLink
+                          to='/admin/aspirants-progress/aspirant-certificate'
+                          state={{ studentId: student.id, studentName: student.name }}
+                        >
+                          <button>
+                            <img src="https://admin.aspiraskillhub.aspirasys.com/images/eye.png" />
+                          </button>
+                        </NavLink>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
 
-        </Wrapper>
-    );
+    </Wrapper>
+  );
 };
 
 export default Certificates;
