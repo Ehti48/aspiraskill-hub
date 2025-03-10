@@ -324,7 +324,7 @@ const Wrapper = styled.section`
     }
   }
 `;
-
+ 
 const Detail = () => {
     const { id } = useParams();
     const [stages, setStages] = useState([]);
@@ -338,69 +338,75 @@ const Detail = () => {
 
     const location = useLocation();
     const techStackName = location.state?.techStackName;
+    const techStackId = location.state?.techStackId;
 
+    const API_URL = `http://localhost:3000/admin/technology_stages/1`;
+
+    // Fetch Stages from API
     useEffect(() => {
-        const storedStages = JSON.parse(localStorage.getItem('stages')) || [];
-        setStages(storedStages);
-    }, []);
+        fetch(`${API_URL}?techStackId=${id}`)
+            .then((res) => res.json())
+            .then((data) => setStages(data))
+            .catch((err) => console.error("Error fetching stages:", err));
+    }, [id]);
 
-    const addStage = () => {
+    // Add Stage (POST Request)
+    const addStage = async () => {
         const duplicateStage = stages.find((stage) => stage.title === name);
-
         if (duplicateStage) {
-            alert('A stage with this title already exists');
+            alert("A stage with this title already exists");
             return;
         }
 
-        const newStage = {
-            id: Date.now(),
-            title: name,
-            img: img,
-        };
+        const newStage = { title: name, img: img, techStackId: id };
 
-        const updatedStages = [...stages, newStage];
-        setStages(updatedStages);
-        localStorage.setItem('stages', JSON.stringify(updatedStages));
-        setModalVisible(false);
-    };
+        try {
+            const res = await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(newStage),
+            });
 
-    const handleThumbnailChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = () => {
-                const base64Image = reader.result;
-                localStorage.setItem("thumbnail", base64Image); // Save to local storage
-                setImg(base64Image); // Update state
-            };
-            reader.readAsDataURL(file);
+            const data = await res.json();
+            setStages([...stages, data]);
+            setModalVisible(false);
+        } catch (err) {
+            console.error("Error adding stage:", err);
         }
     };
 
+    // Edit Stage
     const editStage = (id) => {
         const stageToEdit = stages.find((stage) => stage.id === id);
-        setName(stageToEdit.title || '');
-        setImg(stageToEdit.img || '');
+        setName(stageToEdit.title || "");
+        setImg(stageToEdit.img || "");
         setCurrentStageId(id);
         setEditMode(true);
         setModalVisible(true);
     };
 
+    // Update Stage (PUT Request)
+    const updateStage = async () => {
+        try {
+            const res = await fetch(`${API_URL}/${currentStageId}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ title: name, img: img }),
+            });
 
-    const updateStage = () => {
-        const updatedStages = stages.map((stage) =>
-            stage.id === currentStageId
-                ? { ...stage, title: name, img: img }
-                : stage
-        );
-
-        setStages(updatedStages);
-        localStorage.setItem('stages', JSON.stringify(updatedStages));
-
-        setModalVisible(false);
-        setEditMode(false);
-        setName('');
-        setImg('');
+            if (res.ok) {
+                const updatedStages = stages.map((stage) =>
+                    stage.id === currentStageId ? { ...stage, title: name, img: img } : stage
+                );
+                setStages(updatedStages);
+                setModalVisible(false);
+                setEditMode(false);
+                setName("");
+                setImg("");
+            }
+        } catch (err) {
+            console.error("Error updating stage:", err);
+        }
     };
 
     const resetForm = () => {
@@ -448,9 +454,7 @@ const Detail = () => {
                                         <NavLink
                                             to={`/admin/my-learnings/detail/${id}/material`}
                                             state={{ stageTitle: stage.title, stageId: stage.id, techStackName }}
-
                                         >
-
                                             <button>
                                                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                     <g id="vuesax/linear/eye">

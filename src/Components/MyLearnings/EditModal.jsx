@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
+import React, { useState, useEffect } from "react";
+import styled from "styled-components";
+import axios from "axios";
 
 const ModalWrapper = styled.div`
   position: fixed;
-  top: 0px;
+  top: 0;
   left: 0;
   width: 100%;
   height: 100%;
@@ -23,13 +24,14 @@ const ModalContent = styled.div`
   padding: 25px 30px 30px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   position: relative;
+  overflow: hidden;
 
-   .header {
-      h2 {
-        margin-bottom: 0px !important;
-      }
+  .header {
+    h2 {
+      margin-bottom: 0px !important;
+    }
 
-      .close-icon {
+    .close-icon {
       position: absolute;
       top: 15px;
       right: 25px;
@@ -37,8 +39,8 @@ const ModalContent = styled.div`
       font-weight: 500;
       color: #252e4a99;
       cursor: pointer;
-      }
     }
+  }
 `;
 
 const Title = styled.h2`
@@ -49,34 +51,50 @@ const Title = styled.h2`
 `;
 
 const Form = styled.form`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  height: 80%;
+  overflow-y: auto;
+
+  .input-cont {
+    width: 50%;
+    flex: 1;
+  }
+
+  .input-group {
+    width: 100% !important;
+    margin-bottom: 25px;
+  }
+
+  .checkbox-group {
+    margin-top: 15px;
     display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-    height: 80%;
-    max-height: 80%;
-    overflow: auto;
+    align-items: center;
+    gap: 10px;
 
-    .input-cont {
-      width: 50%;
-      flex: 1;
+    label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
     }
-
-    .input-group {
-      width: 100% !important;
-      margin-bottom: 25px;
-    }
+  }
 
   .upload-img {
     position: relative;
     width: 240px;
     border-radius: 5px;
 
-    .updated-addImage, .updated-addImageMaterial {
-      width: 91%;
-      height: 85%;
-      margin: 10px;
-      object-fit: contain;
+    .updated-addImage,
+    .updated-addImageMaterial {
+      max-width: 100%;
+      height: 91%;
+      object-fit: cover;
+      object-position: center;
       position: absolute;
+      top: 6px;
+      left: 50%;
+      transform: translateX(-50%);
       background-color: white !important;
     }
 
@@ -105,7 +123,6 @@ const Form = styled.form`
         object-fit: cover;
       }
     }
-    
 
     .editImage {
       position: absolute;
@@ -118,7 +135,7 @@ const Form = styled.form`
   label {
     font-size: 14px;
     font-weight: 500;
-    color: #767A7A;
+    color: #767a7a;
   }
 
   input,
@@ -147,7 +164,7 @@ const Form = styled.form`
   .checkBox {
     font-size: 14px;
     font-weight: 500;
-    color: #767A7A;
+    color: #767a7a;
     display: flex;
     margin-top: 10px;
     gap: 25px;
@@ -161,10 +178,10 @@ const Form = styled.form`
 `;
 
 const ButtonGroup = styled.div`
-    width: 100%;
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 
   button {
     padding: 10px 20px;
@@ -182,7 +199,6 @@ const ButtonGroup = styled.div`
     color: white;
 
     &:hover {
-      
     }
   }
 
@@ -192,7 +208,6 @@ const ButtonGroup = styled.div`
     color: #3282c4;
 
     &:hover {
-
     }
   }
 `;
@@ -202,64 +217,114 @@ const ErrorMessage = styled.p`
   font-size: 14px;
 `;
 
-const EditModal = ({ isOpen, onClose, techStack, onSave, existingIds }) => {
+const EditModal = ({ isOpen, onClose, techStack = {}, onSave, existingIds, fetchTechStacks }) => {
   const [formValues, setFormValues] = useState({
-    id: '',
-    name: '',
-    stages: '',
-    description: '',
-    timeStamp: Date.now(),
-    thumbnail: techStack?.thumbnail || localStorage.getItem('thumbnail') || '', // Only persist if techStack is available
+    techId: "",
+    name: "",
+    stages: "",
+    description: "",
+    thumbnail: "",
+    languages: [],
+    other_technology: "0", // Ensuring it is never null
   });
 
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
+  const [imageSelected, setImageSelected] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (techStack) {
+    if (techStack && Object.keys(techStack).length > 0) {
       setFormValues({
-        id: techStack.id,
-        name: techStack.name,
-        stages: techStack.stages,
-        description: techStack.description,
-        thumbnail: techStack.thumbnail, // Use stored thumbnail if available
+        id: techStack.id || "",
+        techId: techStack.technolgy_id || "ASPT_Dummy", // Ensure it is always assigned
+        name: techStack.name || "",
+        stages: techStack.no_stages || "",
+        description: techStack.description || "",
+        thumbnail: techStack.image || "",
+        languages: Array.isArray(techStack.languages) ? techStack.languages : [],
+        other_technology: techStack.other_technology || "0",
       });
+      setImageSelected(!!techStack.image);
     } else {
-      setFormValues((prevValues) => ({
-        ...prevValues,
-        thumbnail: '', // Reset to empty if it's the Add Modal
-      }));
+      setFormValues({
+        id: "",
+        techId: "", // Ensure a default techId for new entries
+        name: "",
+        stages: "",
+        description: "",
+        thumbnail: "",
+        languages: [],
+        other_technology: "0",
+      });
+      setError("");
     }
   }, [techStack]);
 
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormValues((prevValues) => ({
-      ...prevValues,
-      [name]: value,
-    }));
+    setFormValues((prevValues) => ({ ...prevValues, [name]: value }));
   };
-
-  const handleSave = () => {
-    if (existingIds.includes(formValues.id) && techStack?.id !== formValues.id) {
-      setError('Duplicate ID is not allowed.');
-      return;
-    }
-    setError('');
-    onSave(formValues);
-  };
-
-  const [imageSelected, setImageSelected] = useState(false);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setImageSelected(true); // Set to true when an image is selected
       const reader = new FileReader();
       reader.onload = () => {
-        // Update the form value to display the selected image
         setFormValues((prev) => ({ ...prev, thumbnail: reader.result }));
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCheckboxChange = (event) => {
+    const { value, checked } = event.target;
+
+    setFormValues((prevValues) => ({
+      ...prevValues,
+      languages: checked
+        ? [...new Set([...prevValues.languages, value])] // Ensuring no duplicates
+        : prevValues.languages.filter((lang) => lang !== value),
+    }));
+  };
+
+  const languageMap = {
+    English: 1,
+    Hindi: 2,
+    Tamil: 3,
+  };
+
+  const handleSave = async () => {
+    if (!formValues.techId) {
+      setError("Tech ID is required");
+      return;
+    }
+
+    const languagesString = formValues.languages.length > 0
+      ? formValues.languages.map((lang) => languageMap[lang]).join(",")
+      : "1"; // Default to 1
+
+    const updatedFields = {
+      id: formValues.id,
+      technolgy_id: formValues.techId,
+      name: formValues.name,
+      no_stages: formValues.stages,
+      description: formValues.description,
+      image: formValues.thumbnail || "",
+      languages: languagesString,
+      other_technology: formValues.other_technology || "0",
+    };
+
+    try {
+      setLoading(true);
+      await onSave(updatedFields);
+      onClose();
+      console.log("Updated Data:", updatedFields);  
+    } catch (error) {
+      console.error("Error saving tech stack:", error);
+      setError("Something went wrong. Please try again later.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -268,101 +333,96 @@ const EditModal = ({ isOpen, onClose, techStack, onSave, existingIds }) => {
       <ModalWrapper>
         <ModalContent>
           <div className="header">
-          <Title>{techStack ? 'Edit Tech Stack' : 'Add Tech Stack'}</Title>
-          <div className="close-icon" onClick={onClose}>✖</div>
+            <Title>{techStack ? "Edit Tech Stack" : "Add Tech Stack"}</Title>
+            <div className="close-icon" onClick={onClose}>✖</div>
           </div>
+
           <Form>
             <div className="input-cont">
               <div className="input-group">
                 <label>Technology ID</label>
                 <input
                   type="text"
-                  name="id"
-                  value={formValues.id}
+                  name="techId"
+                  value={formValues.techId}
                   onChange={handleChange}
-                  disabled={!!techStack} // Disable ID edit if it's an edit
+                  disabled={!!techStack?.id}  // Only disable if editing an existing tech stack
                 />
+
                 {error && <ErrorMessage>{error}</ErrorMessage>}
               </div>
+
               <div className="input-group">
                 <label>Description</label>
-                <textarea
-                  name="description"
-                  value={formValues.description}
-                  onChange={handleChange}
-                />
+                <textarea name="description" value={formValues.description} onChange={handleChange} />
               </div>
+
               <div className="input-group">
                 <label>Thumbnail</label>
                 <div className="upload-img">
-                  <label htmlFor="editImage_0"></label>
                   <img
-                    src={formValues.thumbnail || 'https://admin.aspiraskillhub.aspirasys.com/images/no-image-found.jpg'}
-                    alt=""
-                    className="edit-updated-image updated-addImage"
-                    style={{
-                      opacity: imageSelected ? 1 : 0, // Conditional opacity
-                      transition: 'opacity 0.3s ease', // Smooth transition
-                    }}
+                    src={formValues.thumbnail || "https://admin.aspiraskillhub.aspirasys.com/images/no-image-found.jpg"}
+                    alt="Thumbnail"
+                    className="edit-updated-image"
                   />
-                  <div className="upload-content edit-tech-old">
-                    <div className="edit-photo">
-                      <img
-                        src="https://admin.aspiraskillhub.aspirasys.com/images/profile-upload.png"
-                        alt="profile"
-                        style={{
-                          opacity: 1, // Conditional opacity
-                          transition: 'opacity 0.3s ease', // Smooth transition
-                        }}
-                      />
-                    </div>
-                    <p className="font-16 fw_500">Upload image</p>
-                  </div>
-                  <input
-                    type="file"
-                    name="image"
-                    className="input d-none editImage"
-                    id="editImage_0"
-                    onChange={handleFileChange}
-                    required=""
-                  />
+                  <input type="file" name="image" className="d-none editImage" onChange={handleFileChange} />
                 </div>
               </div>
             </div>
+
             <div className="input-cont">
               <div className="input-group">
                 <label>Technology Name</label>
                 <input type="text" name="name" value={formValues.name} onChange={handleChange} />
               </div>
+
               <div className="input-group">
-                <label>Number of Stages (In numbers)</label>
+                <label>Number of Stages</label>
                 <input type="number" name="stages" value={formValues.stages} onChange={handleChange} />
               </div>
+
               <div className="input-group">
-                <label>Material Language</label>
-                <div className="checkBox">
-                  <div className="check">
+                <label>Select Languages:</label>
+                <div className="checkbox-group">
+                  <label htmlFor="english">
                     English
-                    <input type="checkbox" name="english" id="" />
-                  </div>
-                  <div className="check">
-                    Tamil
-                    <input type="checkbox" name="tamil" id="" />
-                  </div>
-                  <div className="check">
+                    <input
+                      type="checkbox"
+                      value="English"
+                      id="english"
+                      checked={formValues.languages?.includes("English")}
+                      onChange={handleCheckboxChange}
+                    />
+                  </label>
+                  <label htmlFor="hindi">
                     Hindi
-                    <input type="checkbox" name="hindi" id="" />
-                  </div>
+                    <input
+                      type="checkbox"
+                      value="Hindi"
+                      id="hindi"
+                      checked={formValues.languages?.includes("Hindi")}
+                      onChange={handleCheckboxChange}
+                    />
+                  </label>
+                  <label htmlFor="Tamil">
+                    Tamil
+                    <input
+                      type="checkbox"
+                      value="Tamil"
+                      id="Tamil"
+                      checked={formValues.languages?.includes("Tamil")}
+                      onChange={handleCheckboxChange}
+                    />
+                  </label>
                 </div>
               </div>
             </div>
           </Form>
+
           <ButtonGroup>
-            <button className="cancel-btn" onClick={onClose}>
-              Close
-            </button>
-            <button className="save-btn" onClick={handleSave}>
-              Save
+            <button className="cancel-btn" onClick={onClose}>Close</button>
+            <button className="save-btn" onClick={() => { setLoading(true); handleSave(); }} disabled={loading}>
+              {loading ? "Saving..." : "Save"}
             </button>
           </ButtonGroup>
         </ModalContent>

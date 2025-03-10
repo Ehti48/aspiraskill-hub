@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { MdKeyboardArrowRight } from "react-icons/md";
 import styled from "styled-components";
-import Heading from "../../Components/Heading";
-import Button from "../../Components/Button";
+import Heading from "../Heading";
+import Button from "../Button";
 
 const Wrapper = styled.section`
   .container {
@@ -811,42 +811,6 @@ const Material = () => {
               )}
             </tbody>
           </table>
-          {materials.length > 10 && (
-            <div className="pagination">
-              <Button
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
-                disabled={currentPage === 1}
-              >
-                Prev
-              </Button>
-              {[...Array(pages)].map((_, i) => (
-                <button
-                  key={i + 1}
-                  onClick={() => setCurrentPage(i + 1)}
-                  style={{
-                    padding: '8px 16px',
-                    border: 'none',
-                    borderRadius: '5px',
-                    backgroundColor: currentPage === i + 1 ? '#3282c4' : 'transparent', // Active color changed
-                    color: currentPage === i + 1 ? 'white' : '#3282c4',
-                    cursor: 'pointer',
-                    margin: '0 5px',
-                    boxShadow: currentPage === i + 1 ? 'none' : 'rgba(0, 0, 0, 0.2) 0px 0px 1px 1px',
-                  }}
-                >
-                  {i + 1}
-                </button>
-              ))}
-              <Button
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pages))}
-                style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
-                disabled={currentPage === pages}
-              >
-                Next
-              </Button>
-            </div>
-          )}
         </div>
       </div>
     </Wrapper>

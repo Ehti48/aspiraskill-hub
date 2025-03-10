@@ -182,10 +182,10 @@ const Reset = ({ onLogout }) => {
 
     try {
         console.log("Sending request to server with email:", email);
-        const response = await fetch("http://localhost:5000/api/admin/reset-password/:resettoken", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email }),
+        const response = await fetch("http://localhost:5000/api/admin/forgot-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
         });
 
         const data = await response.json();

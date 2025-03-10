@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
-import Heading from "../Heading";
+import Heading from "../../Components/Heading";
 import { Link, useLocation } from "react-router-dom";
 import { MdKeyboardArrowRight } from "react-icons/md";
 

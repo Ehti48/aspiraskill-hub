@@ -193,7 +193,7 @@ const Wrapper = styled.section`
   }
 `;
 
-const TrainingPlan = () => {
+const Interviews = () => {
   const [students, setStudents] = useState([
     { id: 'ASPT0244', techName: 'Basic Web Tech', name: 'Ibrahim.K', interviewCount: '-', performance: '-' },
     { id: 'ASPT0245', techName: 'React JS', name: 'Iqyan', interviewCount: '-', performance: '-' },
@@ -275,5 +275,5 @@ const TrainingPlan = () => {
   );
 };
 
-export default TrainingPlan;
+export default Interviews;
 

@@ -166,43 +166,32 @@ input {
 `;
 
 const Login = ({ onLogin, onReset }) => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  // Set fixed dummy credentials as initial state
+  const [email, setEmail] = useState("test@example.com");
+  const [password, setPassword] = useState("test123");
   const [errors, setErrors] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-  
+
     const newErrors = {};
     if (!email) newErrors.email = "Email is required.";
     if (!password) newErrors.password = "Password is required.";
-  
+
     setErrors(newErrors);
-  
+
     if (Object.keys(newErrors).length === 0) {
-      try {
-        const response = await axios.post("http://localhost:48857/api/admin/login", {
-          email,
-          password
-        });
-  
-        // Axios puts response data in response.data
-        const data = response.data;
-        
-        // Check for successful status code
-        if (response.status !== 200) {
-          throw new Error(data.error || "Login failed.");
-        }
-  
-        localStorage.setItem("token", data.token);
-        onLogin(data.token);
+      // Check against fixed credentials
+      if (email === "test@example.com" && password === "test123") {
+        // Simulate successful login
+        const dummyToken = "dummy_jwt_token";
+        localStorage.setItem("token", dummyToken);
+        onLogin(dummyToken);
         navigate("/");
-      } catch (error) {
-        // Axios wraps errors, use error.response for server errors
-        const errorMessage = error.response?.data?.error || error.message;
-        setErrors({ password: errorMessage });
+      } else {
+        setErrors({ password: "Invalid credentials - use test@example.com / test123" });
       }
     }
   };
@@ -210,12 +199,9 @@ const Login = ({ onLogin, onReset }) => {
   return (
     <Wrapper>
       <div className="login-container">
-        {/* Left illustration section */}
         <div className="login-illustration">
           <div className="illustration-content"></div>
         </div>
-
-        {/* Login form */}
         <div className="login-form-container">
           <div className="login-form">
             <div className="logo">
@@ -225,6 +211,9 @@ const Login = ({ onLogin, onReset }) => {
               />
             </div>
             <h2>Login Your Account</h2>
+            <div className="dummy-hint" style={{ marginBottom: '1rem', color: '#666' }}>
+              Use test@example.com / test123
+            </div>
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label htmlFor="email">Admin ID</label>
@@ -270,3 +259,109 @@ const Login = ({ onLogin, onReset }) => {
 };
 
 export default Login;
+
+// const Login = ({ onLogin, onReset }) => {
+//   const [email, setEmail] = useState("");
+//   const [password, setPassword] = useState("");
+//   const [errors, setErrors] = useState({ email: "", password: "" });
+//   const [showPassword, setShowPassword] = useState(false);
+//   const navigate = useNavigate();
+
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
+  
+//     const newErrors = {};
+//     if (!email) newErrors.email = "Email is required.";
+//     if (!password) newErrors.password = "Password is required.";
+  
+//     setErrors(newErrors);
+  
+//     if (Object.keys(newErrors).length === 0) {
+//       try {
+//         const response = await axios.post("http://localhost:48857/api/admin/login", {
+//           email,
+//           password
+//         });
+  
+//         // Axios puts response data in response.data
+//         const data = response.data;
+        
+//         // Check for successful status code
+//         if (response.status !== 200) {
+//           throw new Error(data.error || "Login failed.");
+//         }
+  
+//         localStorage.setItem("token", data.token);
+//         onLogin(data.token);
+//         navigate("/");
+//       } catch (error) {
+//         // Axios wraps errors, use error.response for server errors
+//         const errorMessage = error.response?.data?.error || error.message;
+//         setErrors({ password: errorMessage });
+//       }
+//     }
+//   };
+
+//   return (
+//     <Wrapper>
+//       <div className="login-container">
+//         {/* Left illustration section */}
+//         <div className="login-illustration">
+//           <div className="illustration-content"></div>
+//         </div>
+
+//         {/* Login form */}
+//         <div className="login-form-container">
+//           <div className="login-form">
+//             <div className="logo">
+//               <img
+//                 src="https://admin.aspiraskillhub.aspirasys.com/images/Logo.png"
+//                 alt="logo"
+//               />
+//             </div>
+//             <h2>Login Your Account</h2>
+//             <form onSubmit={handleSubmit}>
+//               <div className="form-group">
+//                 <label htmlFor="email">Admin ID</label>
+//                 <input
+//                   type="email"
+//                   id="email"
+//                   placeholder="Enter Email"
+//                   value={email}
+//                   onChange={(e) => setEmail(e.target.value)}
+//                   className={`input-field ${errors.email ? "input-error" : ""}`}
+//                 />
+//                 {errors.email && <p className="error-message">{errors.email}</p>}
+//               </div>
+//               <div className="form-group">
+//                 <label htmlFor="password">Password</label>
+//                 <div className="password-container">
+//                   <input
+//                     type={showPassword ? "text" : "password"}
+//                     id="password"
+//                     placeholder="Password"
+//                     className={`password-input ${errors.password ? "input-error" : ""}`}
+//                     value={password}
+//                     onChange={(e) => setPassword(e.target.value)}
+//                   />
+//                   <span className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
+//                     {showPassword ? <FaEye /> : <FaEyeSlash />}
+//                   </span>
+//                 </div>
+//                 {errors.password && <p className="error-message">{errors.password}</p>}
+//               </div>
+//               <div className="forgot-password">
+//                 <Link to="/reset">Forgot Password?</Link>
+//               </div>
+//               <button type="submit" className="login-button">
+//                 Login
+//               </button>
+//             </form>
+//           </div>
+//         </div>
+//       </div>
+//     </Wrapper>
+//   );
+// };
+
+// export default Login;

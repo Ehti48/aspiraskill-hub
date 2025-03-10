@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
 import axios from "axios";
-import Button from "../../Components/Button";
+import Button from "../Button";
 
 
 const Wrapper = styled.section`

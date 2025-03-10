@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, NavLink } from 'react-router-dom';
+import axios from 'axios';
 import styled from 'styled-components';
 import Heading from '../../Components/Heading';
 import EditModal from './EditModal';
-import { MdOutlineDangerous } from "react-icons/md";
-import { Link } from 'react-router-dom';
 import Button from '../../Components/Button';
 
 const Wrapper = styled.section`
@@ -58,7 +57,7 @@ const Wrapper = styled.section`
 
   .tab-cols {
     width: 100%;
-    min-width: 900px;
+    min-width: 1075px;
     margin-top: 10px;
     overflow-x: scroll;
   }
@@ -67,8 +66,7 @@ const Wrapper = styled.section`
     height: 45px;
     padding-left: 10px;
     display: grid;
-    grid-template-columns: 0.5fr 1.2fr 2fr 0.9fr 2fr 1fr 1.5fr !important;
-    grid-template-rows: 45px;
+grid-template-columns: .4fr .8fr 1fr .8fr 1.4fr 1fr 0.8fr !important;    grid-template-rows: 45px;
     border: 1px solid #cbcbcb;
     border-top: none;
     align-items: center;
@@ -288,37 +286,8 @@ const Wrapper = styled.section`
 `;
 
 const MyLearnings = () => {
-  const initialTechStacks = [
-    {
-      id: '1',
-      name: 'JavaScript',
-      stages: 'Beginner',
-      description: 'Learn the basics of JavaScript.',
-      timeStamp: 1656115200,
-      thumbnail:
-        'https://admin.aspiraskillhub.aspirasys.com/uploads/technology/1656115200.png',
-    },
-    {
-      id: '2',
-      name: 'React',
-      stages: 'Intermediate',
-      description: 'Learn the basics of React.',
-      timeStamp: 1656115201,
-      thumbnail:
-        'https://admin.aspiraskillhub.aspirasys.com/uploads/technology/1656115201.png',
-    },
-    {
-      id: '3',
-      name: 'NodeJS',
-      stages: 'Advanced',
-      description: 'Learn the basics of NodeJS.',
-      timeStamp: 1656115202,
-      thumbnail:
-        'https://admin.aspiraskillhub.aspirasys.com/uploads/technology/1656115202.png',
-    },
-  ];
 
-  const [techStacks, setTechStacks] = useState(initialTechStacks);
+  const [techStacks, setTechStacks] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setModalOpen] = useState(false);
@@ -328,11 +297,24 @@ const MyLearnings = () => {
   const [sortConfig, setSortConfig] = useState({ key: 'timeStamp', direction: 'asc' });
 
   useEffect(() => {
+    fetchTechStacks();
+  }, []);
+
+  const fetchTechStacks = async () => {
+    try {
+      const response = await axios.get('http://localhost:3000/admin/technologies');
+      setTechStacks(response.data);
+    } catch (error) {
+      console.error('Error fetching tech stacks:', error);
+    }
+  };
+
+  useEffect(() => {
     const storedTechStacks = JSON.parse(localStorage.getItem('techStacks'));
     if (storedTechStacks && storedTechStacks.length > 0) {
       setTechStacks(storedTechStacks);
     } else {
-      setTechStacks(initialTechStacks);
+      setTechStacks([]);
     }
   }, []);
 
@@ -342,27 +324,43 @@ const MyLearnings = () => {
 
   const handleSearchChange = (e) => setSearchQuery(e.target.value);
 
-  const handleSaveTechStack = (newTechStack) => {
-    setTechStacks((prev) => {
-      const exists = prev.some((stack) => stack.id === newTechStack.id);
-      return exists
-        ? prev.map((stack) => (stack.id === newTechStack.id ? newTechStack : stack))
-        : [...prev, newTechStack];
-    });
-    setModalOpen(false);
-    setCurrentTechStack(null);
-  };
+  const handleSaveTechStack = async (newTechStack) => {
+    try {
+      const response = newTechStack.id
+        ? await axios.put(`http://localhost:3000/admin/technologies/update/${newTechStack.id}`, newTechStack)
+        : await axios.post('http://localhost:3000/admin/technologies/create', newTechStack);
 
-  const handleDeleteTechStack = () => {
-    setTechStacks((prev) => prev.filter((stack) => stack.id !== techStackToDelete.id));
-    setDeleteModalOpen(false);
-    setTechStackToDelete(null);
+      setTechStacks((prev) => {
+        const exists = prev.some((stack) => stack.id === response.data.id);
+        return exists
+          ? prev.map((stack) => (stack.id === response.data.id ? response.data : stack))
+          : [...prev, response.data];
+      });
+      fetchTechStacks();
+      setModalOpen(false);
+      setCurrentTechStack();
+    } catch (error) {
+      console.error('Error saving tech stack:', error);
+      if (error.response) {
+        console.error('Server response:', error.response.data);
+      }
+    }
+  };
+  const handleDeleteTechStack = async () => {
+    try {
+      await axios.delete(`http://localhost:3000/admin/technologies/delete/${techStackToDelete.id}`);
+      setTechStacks((prev) => prev.filter((stack) => stack.id !== techStackToDelete.id));
+      setDeleteModalOpen(false);
+      setTechStackToDelete(null);
+    } catch (error) {
+      console.error('Error deleting tech stack:', error);
+    }
   };
 
   const filteredTechStacks = techStacks.filter(
     (stack) =>
-      stack.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      stack.id.toLowerCase().includes(searchQuery.toLowerCase())
+      stack.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      stack.technolgy_id?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const pages = Math.ceil(filteredTechStacks.length / 10);
@@ -464,20 +462,20 @@ const MyLearnings = () => {
                 paginatedTechStacks.map((techStack, index) => (
                   <tr className="odd" key={techStack.id}>
                     <td>{(currentPage - 1) * 10 + index + 1}</td>
-                    <td>{techStack.id}</td>
-                    <td>{techStack.name}</td>
-                    <td>{techStack.stages}</td>
+                    <td>{techStack.technolgy_id}</td>
+                    <td className='cut-text'>{techStack.name}</td>
+                    <td>{techStack.no_stages}</td>
                     <td className='cut-text'>{techStack.description || '-'}</td>
                     <td>
-                      {techStack.thumbnail ? (
-                        <img className='thumb' src={techStack.thumbnail} alt={techStack.name} width="50" height="50" />
+                      {techStack.image ? (
+                        <img className='thumb' src={techStack.image} alt={techStack.name} width="50" height="50" />
                       ) : (
                         '-'
                       )}
                     </td>
                     <td className="stack-output">
                       <NavLink
-                        to={`/admin/my-learnings/detail/${techStack.id.slice(-2)}`}
+                        to={`/admin/my-learnings/detail/${techStack.technolgy_id.slice(-2)}`}
                         state={{ techStackName: techStack.name, techStackId: techStack.id, techStackStages: techStack.stages }}
                       >
                         <button>
@@ -513,41 +511,41 @@ const MyLearnings = () => {
             </tbody>
           </table>
         </div>
-        {filteredTechStacks.length > 10 && (
+        {techStacks.length > 10 && (
           <div className="pagination">
-          <Button
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
-            disabled={currentPage === 1}
-          >
-            Prev
-          </Button>
-          {[...Array(pages)].map((_, i) => (
-            <button
-              key={i + 1}
-              onClick={() => setCurrentPage(i + 1)}
-              style={{
-                padding: '8px 16px',
-                border: 'none',
-                borderRadius: '5px',
-                backgroundColor: currentPage === i + 1 ? '#3282c4' : 'transparent', // Active color changed
-                color: currentPage === i + 1 ? 'white' : '#3282c4',
-                cursor: 'pointer',
-                margin: '0 5px',
-                boxShadow: currentPage === i + 1 ? 'none' : 'rgba(0, 0, 0, 0.2) 0px 0px 1px 1px',
-              }}
+            <Button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
+              disabled={currentPage === 1}
             >
-              {i + 1}
-            </button>
-          ))}
-          <Button
-            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pages))}
-            style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
-            disabled={currentPage === pages}
-          >
-            Next
-          </Button>
-        </div>
+              Prev
+            </Button>
+            {[...Array(pages)].map((_, i) => (
+              <button
+                key={i + 1}
+                onClick={() => setCurrentPage(i + 1)}
+                style={{
+                  padding: '8px 16px',
+                  border: 'none',
+                  borderRadius: '5px',
+                  backgroundColor: currentPage === i + 1 ? '#3282c4' : 'transparent', // Active color changed
+                  color: currentPage === i + 1 ? 'white' : '#3282c4',
+                  cursor: 'pointer',
+                  margin: '0 5px',
+                  boxShadow: currentPage === i + 1 ? 'none' : 'rgba(0, 0, 0, 0.2) 0px 0px 1px 1px',
+                }}
+              >
+                {i + 1}
+              </button>
+            ))}
+            <Button
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pages))}
+              style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
+              disabled={currentPage === pages}
+            >
+              Next
+            </Button>
+          </div>
         )}
         {isModalOpen && (
           <EditModal
@@ -557,8 +555,8 @@ const MyLearnings = () => {
               setCurrentTechStack(null);
             }}
             techStack={currentTechStack}
-            onSave={handleSaveTechStack}
-            existingIds={techStacks.map((stack) => stack.id)}
+            onSave={handleSaveTechStack} // Pass the correct function
+            existingIds={techStacks.map((stack) => stack.technolgy_id)}
           />
         )}
         {isDeleteModalOpen && (
