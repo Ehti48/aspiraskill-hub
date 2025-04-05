@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import axios from "axios";
 import styled from "styled-components";
 import Heading from "../Heading";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import Loader from "../Loader";
 
 const Wrapper = styled.section`
   /* General Styles */
@@ -272,6 +274,13 @@ form.general-form {
 .password-input {
   width: 325px;
   position: relative;
+
+  i {
+    position: absolute;
+    top: 50%;
+    right: 15px;
+    transform: translateY(-40%);
+  }
 }
 
 .password-input input {
@@ -411,39 +420,76 @@ small.error-message {
       width:100%;
       }
 }
-    
-      
+
 }
 `;
-
 const Profile = () => {
   const [activeSection, setActiveSection] = useState("general");
+  const [isLoading, setIsLoading] = useState(true);
 
-  // State to manage the General section form
-  const [isEditing, setIsEditing] = useState(false);
+  // State for profile data
   const [formData, setFormData] = useState({
-    firstName: "Ehtishamul",
-    lastName: "Haque",
-    fullName: "Ehtishamul Haque",
+    firstName: "",
+    lastName: "",
+    name: "",
+    email: "", // Add this field
   });
-  const [originalData, setOriginalData] = useState({ ...formData });
 
-  // State to manage the Security section form
+  const [originalData, setOriginalData] = useState({ ...formData });
+  const [isEditing, setIsEditing] = useState(false);
+
+  // State for security section
   const [passwords, setPasswords] = useState({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
-  const [errors, setErrors] = useState({});
 
-  // State for password visibility toggle
+  const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState({
     currentPassword: false,
     newPassword: false,
     confirmPassword: false,
   });
 
-  // Toggle editing mode for the General section
+  // Fetch profile data on component mount
+
+  useEffect(() => {
+    fetchProfileData();
+  }, []);
+
+  const fetchProfileData = async () => {
+    const userId = localStorage.getItem("user_id"); // ✅ Fix: Correct key for user ID
+    const roleId = localStorage.getItem("role_id");
+
+    console.log("User ID:", userId);
+    console.log("Role ID:", roleId);
+
+    if (roleId !== "1") { // Ensure it's a string if stored as string
+      alert("Access denied. You are not an admin.");
+      return;
+    }
+
+    try {
+      const response = await axios.get(`http://localhost:5000/admin/profile/view/${userId}`);
+
+      console.log("API Response:", response.data);
+
+      if (response.data) {
+        const { name = "", email = "", role_id } = response.data;
+        const [firstName = "", lastName = ""] = name.split(" ");
+
+        setFormData({ firstName, lastName, name, email, role_id });
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+      setIsLoading(false);
+    }
+  };
+
+
+  // Toggle editing mode
   const handleEditToggle = () => {
     if (isEditing) {
       setFormData(originalData); // Revert changes on cancel
@@ -455,8 +501,43 @@ const Profile = () => {
 
   // Save changes in the General section
   const handleSave = () => {
-    setIsEditing(false);
-    console.log("Saved Data:", formData); // Mock save functionality
+
+    const userId = localStorage.getItem("user_id");
+  
+    if (!userId) {
+      console.error("User ID not found in localStorage");
+      alert("User ID not found. Please log in again.");
+      return;
+    }
+    // Create updated payload
+    const payload = {
+      ...formData,
+      name: `${formData.firstName} ${formData.lastName}`.trim(),
+    };
+
+    // Remove unnecessary fields (if backend doesn't accept them)
+    delete payload.firstName;
+    delete payload.lastName;
+
+    axios
+      .put(`http://localhost:5000/admin/profile/edit/${userId}`, payload)
+      .then((response) => {
+        // Update the name field in the state
+        setFormData((prevData) => ({
+          ...prevData,
+          name: `${prevData.firstName} ${prevData.lastName}`.trim(),
+        }));
+        setIsEditing(false);
+        // Update local storage
+        localStorage.setItem("username", payload.name);
+        localStorage.setItem("email", payload.email);
+      })
+      .catch((error) => {
+        console.error("Error updating profile:", error);
+        if (error.response) {
+          alert(`Error: ${error.response.data.error}`);
+        }
+      });
   };
 
   // Handle input changes in the General section
@@ -473,52 +554,52 @@ const Profile = () => {
 
   // Toggle password visibility
   const togglePasswordVisibility = (field) => {
-    setShowPassword((prevState) => ({
-      ...prevState,
-      [field]: !prevState[field],
-    }));
+    setShowPassword((prev) => ({ ...prev, [field]: !prev[field] }));
   };
 
   // Validate the Security form inputs
   const validateSecurityForm = () => {
     const newErrors = {};
-
     if (!passwords.currentPassword) newErrors.currentPassword = "Current Password is Required";
     if (!passwords.newPassword) newErrors.newPassword = "New Password is Required";
     if (!passwords.confirmPassword) newErrors.confirmPassword = "Confirm Password is Required";
-    if (
-      passwords.newPassword &&
-      passwords.confirmPassword &&
-      passwords.newPassword !== passwords.confirmPassword
-    ) {
+    if (passwords.newPassword !== passwords.confirmPassword) {
       newErrors.confirmPassword = "Passwords do not match";
     }
-
     setErrors(newErrors);
-
-    return Object.keys(newErrors).length === 0; // Return true if no errors
+    return Object.keys(newErrors).length === 0;
   };
 
   // Handle password change submission
   const handlePasswordSubmit = (e) => {
     e.preventDefault();
-
+    const userId = localStorage.getItem("user_id");
+  
+    if (!userId) {
+      console.error("User ID not found in localStorage");
+      alert("User ID not found. Please log in again.");
+      return;
+    }
     if (validateSecurityForm()) {
-      alert("Password successfully changed!");
-      console.log("Passwords:", passwords); // Mock save functionality
-      setPasswords({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      });
-      setErrors({});
+      axios
+        .put(`http://localhost:5000/admin/profile/change-password/${userId}`, passwords)
+        .then(() => {
+          alert("Password successfully changed!");
+          setPasswords({ currentPassword: "", newPassword: "", confirmPassword: "" });
+          setErrors({});
+        })
+        .catch((error) => console.error("Error changing password:", error));
     }
   };
+
+  // Render loading state while data is being fetched
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <Wrapper>
       <div className="settings-container">
-        {/* Sidebar */}
         <div className="sub-sidebar">
           <ul>
             <li
@@ -536,20 +617,22 @@ const Profile = () => {
           </ul>
         </div>
 
-        {/* Content */}
         <div className="settings-content">
-          {/* General Section */}
           {activeSection === "general" && (
             <div className="general-section">
               <div className="general-card">
                 <Heading title={"General Information"} />
                 <div className="profile">
                   <div className="profile-image">
-                    <img src="https://admin.aspiraskillhub.aspirasys.com/images/edit-profile-page.png" alt="" id="profileImagePreview" />
+                    <img
+                      src="https://admin.aspiraskillhub.aspirasys.com/images/edit-profile-page.png"
+                      alt="Profile"
+                    />
                   </div>
                   <div className="profile-info">
-                    <span className="role">ADMIN</span>
-                    <Heading title={formData.fullName} className="admin-name" />
+                    <span className="role">{formData.role_id === 1 ? "ADMIN" : "USER"}</span>
+                    <Heading title={formData.name} className="profile-name" />
+
                     {isEditing && (
                       <div className="photo-actions">
                         <p onClick={() => alert("Edit Photo")}>Edit Photo</p>
@@ -580,31 +663,31 @@ const Profile = () => {
                         disabled={!isEditing}
                       />
                     </div>
+                    {/* <div className="form-group">
+                      <label>Email</label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        disabled
+                      />
+                    </div> */}
                   </div>
                   {isEditing ? (
                     <div className="action-buttons">
-                      <button
-                        type="button"
-                        className="cancel-btn"
-                        onClick={handleEditToggle}
-                      >
+                      <button type="button" className="cancel-btn" onClick={handleEditToggle}>
                         Cancel
                       </button>
-                      <button
-                        type="button"
-                        className="save-btn"
-                        onClick={handleSave}
-                      >
+                      <button type="button" className="save-btn" onClick={handleSave}>
                         Save
                       </button>
                     </div>
                   ) : (
-                    <button
-                      type="button"
-                      className="edit-btn"
-                      onClick={handleEditToggle}
-                    >
-                      <img src="https://admin.aspiraskillhub.aspirasys.com/images/edit-file.png"></img>
+                    <button type="button" className="edit-btn" onClick={handleEditToggle}>
+                      <img
+                        src="https://admin.aspiraskillhub.aspirasys.com/images/edit-file.png"
+                        alt="Edit"
+                      />
                       Edit
                     </button>
                   )}
@@ -613,30 +696,21 @@ const Profile = () => {
             </div>
           )}
 
-          {/* Security Section */}
           {activeSection === "security" && (
             <div className="security-section">
               <div className="security-card">
                 <Heading title={"Change Password"} />
                 <form onSubmit={handlePasswordSubmit}>
                   <div className="form-group">
-                    <label htmlFor="current-password">Current Password</label>
-                    <div className={`password-input  ${errors.currentPassword ? "error" : ""}`}>
+                    <label>Current Password</label>
+                    <div className={`password-input ${errors.currentPassword ? "error" : ""}`}>
                       <input
                         type={showPassword.currentPassword ? "text" : "password"}
                         name="currentPassword"
-                        id="current-password"
                         value={passwords.currentPassword}
                         onChange={handlePasswordChange}
-                        style={{
-                          borderColor: errors.currentPassword ? "red" : "",
-                          backgroundColor: errors.currentPassword ? "#ffcccc" : "",
-                        }}
                       />
-                      <i
-                        className="toggle-visibility"
-                        onClick={() => togglePasswordVisibility("currentPassword")}
-                      >
+                      <i onClick={() => togglePasswordVisibility("currentPassword")}>
                         {showPassword.currentPassword ? <FaEye /> : <FaEyeSlash />}
                       </i>
                     </div>
@@ -644,25 +718,18 @@ const Profile = () => {
                       <small className="error-message">{errors.currentPassword}</small>
                     )}
                   </div>
+
                   <div className="change-password">
                     <div className="changeForm">
-                      <label htmlFor="new-password">New Password</label>
-                      <div className={`password-input ${errors.newPassword ? "error" : "xfdsfsfs"}`}>
+                      <label>New Password</label>
+                      <div className={`password-input ${errors.newPassword ? "error" : ""}`}>
                         <input
                           type={showPassword.newPassword ? "text" : "password"}
                           name="newPassword"
-                          id="new-password"
                           value={passwords.newPassword}
                           onChange={handlePasswordChange}
-                          style={{
-                            borderColor: errors.currentPassword ? "red" : "",
-                            backgroundColor: errors.currentPassword ? "#ffcccc" : "",
-                          }}
                         />
-                        <i
-                          className="toggle-visibility"
-                          onClick={() => togglePasswordVisibility("newPassword")}
-                        >
+                        <i onClick={() => togglePasswordVisibility("newPassword")}>
                           {showPassword.newPassword ? <FaEye /> : <FaEyeSlash />}
                         </i>
                       </div>
@@ -670,24 +737,17 @@ const Profile = () => {
                         <small className="error-message">{errors.newPassword}</small>
                       )}
                     </div>
+
                     <div className="changeForm">
-                      <label htmlFor="confirm-password">Confirm New Password</label>
+                      <label>Confirm New Password</label>
                       <div className={`password-input ${errors.confirmPassword ? "error" : ""}`}>
                         <input
                           type={showPassword.confirmPassword ? "text" : "password"}
                           name="confirmPassword"
-                          id="confirm-password"
                           value={passwords.confirmPassword}
                           onChange={handlePasswordChange}
-                          style={{
-                            borderColor: errors.currentPassword ? "red" : "",
-                            backgroundColor: errors.currentPassword ? "#ffcccc" : "",
-                          }}
                         />
-                        <i
-                          className="toggle-visibility"
-                          onClick={() => togglePasswordVisibility("confirmPassword")}
-                        >
+                        <i onClick={() => togglePasswordVisibility("confirmPassword")}>
                           {showPassword.confirmPassword ? <FaEye /> : <FaEyeSlash />}
                         </i>
                       </div>
@@ -696,30 +756,11 @@ const Profile = () => {
                       )}
                     </div>
                   </div>
-                  <div className="action-buttons">
-                    {isEditing ? (
-                      <div className="action-buttons">
-                        <button
-                          type="button"
-                          className="cancel-btn"
-                          onClick={handleEditToggle}
-                        >
-                          Cancel
-                        </button>
-                        <button type="submit" className="save-btn">
-                          Change Password
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        className="edit-btn"
-                        onClick={handleEditToggle}
-                      >
-                        Change Password
-                      </button>
-                    )}
 
+                  <div className="action-buttons">
+                    <button type="submit" className="save-btn">
+                      Change Password
+                    </button>
                   </div>
                 </form>
               </div>
@@ -730,6 +771,5 @@ const Profile = () => {
     </Wrapper>
   );
 };
-
 
 export default Profile;

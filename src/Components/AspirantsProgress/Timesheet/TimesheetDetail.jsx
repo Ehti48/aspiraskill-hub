@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
-import styled from "styled-components";
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import styled, { keyframes } from "styled-components";
 import Heading from "../../../Components/Heading";
-import { Link, useLocation } from "react-router-dom";
 import Button from "../../../Components/Button";
 import { MdKeyboardArrowRight } from "react-icons/md";
 import axios from "axios";
@@ -220,7 +220,7 @@ const Wrapper = styled.section`
     height: 45px;
     padding-left: 10px;
     display: grid;
-    grid-template-columns: 0.3fr 1.7fr 1fr 3fr 1fr 1.5fr!important;
+    grid-template-columns: 0.3fr 1.7fr 1.5fr 2fr 1fr 1.5fr!important;
     border: 1px solid #cbcbcb;
     border-top: none;
     justify-content: space-evenly;
@@ -403,6 +403,59 @@ const Wrapper = styled.section`
     }
 `;
 
+// Loading animation
+const spin = keyframes`
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+`;
+
+const LoadingOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.9);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  transition: opacity 0.3s ease-out;
+`;
+
+const Spinner = styled.div`
+  width: 50px;
+  height: 50px;
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #3498db;
+  border-radius: 50%;
+  animation: ${spin} 1.5s linear infinite;
+`;
+
+const LoadingText = styled.p`
+  margin-top: 20px;
+  font-size: 1.2rem;
+  color: #333;
+  font-weight: 500;
+`;
+
+const ProgressBar = styled.div`
+  width: 200px;
+  height: 8px;
+  background-color: #f3f3f3;
+  border-radius: 4px;
+  margin-top: 15px;
+  overflow: hidden;
+`;
+
+const Progress = styled.div`
+  height: 100%;
+  width: ${props => props.progress}%;
+  background-color: #3498db;
+  transition: width 0.3s ease;
+`;
+
 const TimesheetDetail = () => {
   const [students, setStudents] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -413,8 +466,37 @@ const TimesheetDetail = () => {
   const [month, setMonth] = useState("");
   const [hours, setHours] = useState("");
   const [filteredStudents, setFilteredStudents] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadProgress, setLoadProgress] = useState(0);
 
-  const handleReset = () => {
+  const location = useLocation();
+  const studentId = location.state?.studentId;
+  const studentName = location.state?.studentName;
+
+  const idToType = {
+    1: "Productive Effort",
+    2: "System/Power Issue",
+    3: "Leave",
+  };
+
+  const filterStudents = useCallback((data, query, from, to, cat, mnth, hrs) => {
+    return data.filter(student => {
+      const dateMatch =
+        (!from || new Date(student.date) >= new Date(from)) &&
+        (!to || new Date(student.date) <= new Date(to));
+      const categoryMatch =
+        !cat || student.type.toLowerCase().includes(cat.toLowerCase());
+      const monthMatch = !mnth || student.date.includes(mnth);
+      const hoursMatch = !hrs || student.hours === hrs;
+      const searchMatch =
+        student.date.toLowerCase().includes(query.toLowerCase()) ||
+        student.type.toLowerCase().includes(query.toLowerCase());
+
+      return searchMatch && dateMatch && categoryMatch && monthMatch && hoursMatch;
+    });
+  }, []);
+
+  const handleReset = useCallback(() => {
     document.querySelectorAll("form").forEach((form) => form.reset());
     setSearchQuery("");
     setDateFrom("");
@@ -423,7 +505,8 @@ const TimesheetDetail = () => {
     setMonth("");
     setHours("");
     setFilteredStudents(students);
-  };
+    setCurrentPage(1);
+  }, [students]);
 
   const handleSearchChange = (e) => setSearchQuery(e.target.value);
   const handleDateFromChange = (e) => setDateFrom(e.target.value);
@@ -432,329 +515,382 @@ const TimesheetDetail = () => {
   const handleMonthChange = (e) => setMonth(e.target.value);
   const handleHoursChange = (e) => setHours(e.target.value);
 
-  const location = useLocation();
-  const studentId = location.state?.studentId;
-  const studentName = location.state?.studentName;
+  const handleSubmit = useCallback((e) => {
+    e?.preventDefault();
+    const filteredData = filterStudents(
+      students,
+      searchQuery,
+      dateFrom,
+      dateTo,
+      category,
+      month,
+      hours
+    );
+    setFilteredStudents(filteredData);
+    setCurrentPage(1);
+  }, [students, searchQuery, dateFrom, dateTo, category, month, hours, filterStudents]);
 
-  useEffect(() => {
-    const fetchTimesheet = async () => {
-      try {
-        const response = await axios.get(
-          "http://localhost:48857/api/admin/timesheets"
-        );
-        console.log("API Response:", response.data?.timesheets);
-        const data = response.data?.timesheets || [];
-        console.log("Formatted Data:", data);
-        setStudents(data);
-        setFilteredStudents(data);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
-    fetchTimesheet();
-  }, []);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const filteredData = students.filter((student) => {
-      const dateMatch =
-        (!dateFrom || new Date(student.date) >= new Date(dateFrom)) &&
-        (!dateTo || new Date(student.date) <= new Date(dateTo));
-      const categoryMatch =
-        !category ||
-        student.type.toLowerCase().includes(category.toLowerCase());
-      const monthMatch = !month || student.date.includes(month);
-      const hoursMatch = !hours || student.hours === hours;
-
-      return (
-        (student.date.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          student.type.toLowerCase().includes(searchQuery.toLowerCase())) &&
-        dateMatch &&
-        categoryMatch &&
-        monthMatch &&
-        hoursMatch
-      );
-    });
-
-    setFilteredStudents(filteredData); // Set filtered students after button click
-  };
-
-  const handleSearchClick = () => {
+  const handleSearchClick = useCallback(() => {
     handleSubmit(new Event("submit"));
-  };
+  }, [handleSubmit]);
 
-  const handleSearch = (e) => {
+  const handleSearch = useCallback((e) => {
     const value = e.target.value;
     setSearchQuery(value);
 
     const filteredData = students.filter((student) => {
       const dateMatch = student.date.toLowerCase().includes(value.toLowerCase());
       const categoryMatch = student.type.toLowerCase().includes(value.toLowerCase());
-
       return dateMatch || categoryMatch;
     });
 
     setFilteredStudents(filteredData);
-  };
+    setCurrentPage(1);
+  }, [students]);
 
-  const pages = Math.ceil(filteredStudents.length / 10);
-  const start = (currentPage - 1) * 10;
-  const end = start + 10;
-  const paginatedTechStacks = filteredStudents.slice(start, end);
+  // Fetch timesheets with loading progress
+  const fetchTimesheet = useCallback(async () => {
+    const MIN_LOADING_TIME = 1500; // Minimum 1.5 seconds loading time
+    const startTime = Date.now();
+    let progressInterval;
+
+    try {
+      // Start progress simulation
+      progressInterval = setInterval(() => {
+        setLoadProgress(prev => Math.min(prev + 10, 90)); // Stop at 90% until load completes
+      }, 200);
+
+      const response = await axios.get(
+        "http://localhost:48857/api/admin/timesheets"
+      );
+
+      const data = response.data?.timesheets || [];
+
+      // Calculate remaining minimum loading time
+      const elapsed = Date.now() - startTime;
+      const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsed);
+
+      setTimeout(() => {
+        clearInterval(progressInterval);
+        setStudents(data);
+        setFilteredStudents(data);
+        setLoadProgress(100);
+
+        // Small delay to show 100% progress before hiding
+        setTimeout(() => setIsLoading(false), 300);
+      }, remainingTime);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      const elapsed = Date.now() - startTime;
+      const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsed);
+
+      setTimeout(() => {
+        clearInterval(progressInterval);
+        setLoadProgress(100);
+        setTimeout(() => setIsLoading(false), 300);
+      }, remainingTime);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTimesheet();
+  }, [fetchTimesheet]);
+
+  const { pages, paginatedTechStacks } = useMemo(() => {
+    const pages = Math.ceil(filteredStudents.length / 10);
+    const start = (currentPage - 1) * 10;
+    const end = start + 10;
+    const paginatedTechStacks = filteredStudents.slice(start, end);
+
+    return { pages, paginatedTechStacks };
+  }, [filteredStudents, currentPage]);
 
   return (
-    <Wrapper>
-      <div className="user-timesheet">
-        <nav aria-label="breadcrumb">
-          <ol className="breadcrumb ad-sck">
-            <li className="breadcrumb-item">
-              <Link to="/admin/aspirants-progress">Timesheet</Link>
-            </li>
-            <MdKeyboardArrowRight />
-            <li className="breadcrumb-item active" aria-current="page">
-              {studentId}
-            </li>
-          </ol>
-        </nav>
-        <div className="usertime-id">
-          <p className="usertime-name">
-            Aspirant : {studentId} - {studentName}
-          </p>
+    <>
+      {isLoading && (
+        <LoadingOverlay>
+          <Spinner />
+          <LoadingText>Loading Timesheet Data...</LoadingText>
+          <ProgressBar>
+            <Progress progress={loadProgress} />
+          </ProgressBar>
+        </LoadingOverlay>
+      )}
+
+      <Wrapper>
+        <div className="user-timesheet">
+          <nav aria-label="breadcrumb">
+            <ol className="breadcrumb ad-sck">
+              <li className="breadcrumb-item">
+                <Link to="/admin/aspirants-progress">Timesheet</Link>
+              </li>
+              <MdKeyboardArrowRight />
+              <li className="breadcrumb-item active" aria-current="page">
+                {studentId}
+              </li>
+            </ol>
+          </nav>
+          <div className="usertime-id">
+            <p className="usertime-name">
+              Aspirant : {studentId} - {studentName}
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div className="dateSec">
-        <form className="date-header" onSubmit={handleSubmit}>
-          <div className="date-section">
-            <div className="date-form">
-              <label htmlFor="date-from">From</label>
-              <input
-                type="date"
-                name="from"
-                id="date-from"
-                value={dateFrom}
-                onChange={handleDateFromChange}
-              />
-              <div className="date-icon">
-                <img
-                  src="https://admin.aspiraskillhub.aspirasys.com/images/Calendar.png"
-                  alt="Calendar"
-                />
-              </div>
-            </div>
-            <div className="date-form">
-              <label htmlFor="date-to">To</label>
-              <input
-                type="date"
-                name="to"
-                id="date-to"
-                value={dateTo}
-                onChange={handleDateToChange}
-              />
-              <div className="date-icon">
-                <img
-                  src="https://admin.aspiraskillhub.aspirasys.com/images/Calendar.png"
-                  alt="Calendar"
-                />
-              </div>
-            </div>
-            <div className="src-button">
-              <button type="button" onClick={handleSearchClick}>
-                <img
-                  src="https://admin.aspiraskillhub.aspirasys.com/images/search.png"
-                  alt="Search"
-                />
-              </button>
-            </div>
-          </div>
-          <div className="date-section">
-            <div className="date-form">
-              <label htmlFor="month">Month</label>
-              <select
-                name="month"
-                id="month"
-                value={month}
-                onChange={handleMonthChange}
-              >
-                <option value="">MM</option>
-                {[
-                  "Jan",
-                  "Feb",
-                  "Mar",
-                  "Apr",
-                  "May",
-                  "Jun",
-                  "Jul",
-                  "Aug",
-                  "Sep",
-                  "Oct",
-                  "Nov",
-                  "Dec",
-                ].map((month, index) => (
-                  <option
-                    value={String(index + 1).padStart(2, "0")}
-                    key={index}
-                  >
-                    {month}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="date-form">
-              <label htmlFor="hours">Hours</label>
-              <select
-                name="hours"
-                id="hours"
-                value={hours}
-                onChange={handleHoursChange}
-              >
-                <option value="">HH</option>
-                {[...Array(12).keys()].map((hour) => (
-                  <option value={String(hour).padStart(2, "0")} key={hour}>
-                    {String(hour).padStart(2, "0")}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="date-form">
-              <label htmlFor="category">Category</label>
-              <select
-                name="category"
-                id="category"
-                value={category}
-                onChange={handleCategoryChange}
-              >
-                <option value="">Select Category</option>
-                {[
-                  "Productive Effort",
-                  "System/Power issue",
-                  "Leave",
-                  "Permission",
-                  "Assignment",
-                  "Project",
-                  "Other",
-                  "Practice",
-                ].map((category, index) => (
-                  <option value={category} key={index}>
-                    {category}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="src-button">
-              <button
-                onClick={handleSubmit}
-              >
-                <img
-                  src="https://admin.aspiraskillhub.aspirasys.com/images/search.png"
-                  alt="Search"
-                />
-              </button>
-            </div>
-            <div className="src-button">
-              <button
-                type="button"
-                className="reset-button"
-                onClick={handleReset}
-              >
-                <img
-                  src="https://admin.aspiraskillhub.aspirasys.com/images/rotate-left.png"
-                  alt="Reset"
-                />
-                Reset
-              </button>
-            </div>
-          </div>
-        </form>
-
-        <Heading title="Timesheet" />
-
-        <div className="list-cont">
-          <div className="container-2">
-            <div className="header">
-              <div className="searchBox">
+        <div className="dateSec">
+          <form className="date-header" onSubmit={handleSubmit}>
+            <div className="date-section">
+              <div className="date-form">
+                <label htmlFor="date-from">From</label>
                 <input
-                  type="text"
-                  placeholder="Search"
-                  value={searchQuery}
-                  onChange={handleSearch}
+                  type="date"
+                  name="from"
+                  id="date-from"
+                  value={dateFrom}
+                  onChange={handleDateFromChange}
+                  disabled={isLoading}
                 />
+                <div className="date-icon">
+                  <img
+                    src="https://admin.aspiraskillhub.aspirasys.com/images/Calendar.png"
+                    alt="Calendar"
+                  />
+                </div>
               </div>
-              <Button className="exportBtn">Export XLS</Button>
+              <div className="date-form">
+                <label htmlFor="date-to">To</label>
+                <input
+                  type="date"
+                  name="to"
+                  id="date-to"
+                  value={dateTo}
+                  onChange={handleDateToChange}
+                  disabled={isLoading}
+                />
+                <div className="date-icon">
+                  <img
+                    src="https://admin.aspiraskillhub.aspirasys.com/images/Calendar.png"
+                    alt="Calendar"
+                  />
+                </div>
+              </div>
+              <div className="src-button">
+                <button
+                  type="button"
+                  onClick={handleSearchClick}
+                  disabled={isLoading}
+                >
+                  <img
+                    src="https://admin.aspiraskillhub.aspirasys.com/images/search.png"
+                    alt="Search"
+                  />
+                </button>
+              </div>
             </div>
+            <div className="date-section">
+              <div className="date-form">
+                <label htmlFor="month">Month</label>
+                <select
+                  name="month"
+                  id="month"
+                  value={month}
+                  onChange={handleMonthChange}
+                  disabled={isLoading}
+                >
+                  <option value="">MM</option>
+                  {[
+                    "Jan",
+                    "Feb",
+                    "Mar",
+                    "Apr",
+                    "May",
+                    "Jun",
+                    "Jul",
+                    "Aug",
+                    "Sep",
+                    "Oct",
+                    "Nov",
+                    "Dec",
+                  ].map((month, index) => (
+                    <option
+                      value={String(index + 1).padStart(2, "0")}
+                      key={index}
+                    >
+                      {month}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="date-form">
+                <label htmlFor="hours">Hours</label>
+                <select
+                  name="hours"
+                  id="hours"
+                  value={hours}
+                  onChange={handleHoursChange}
+                  disabled={isLoading}
+                >
+                  <option value="">HH</option>
+                  {[...Array(12).keys()].map((hour) => (
+                    <option value={String(hour).padStart(2, "0")} key={hour}>
+                      {String(hour).padStart(2, "0")}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="date-form">
+                <label htmlFor="category">Category</label>
+                <select
+                  name="category"
+                  id="category"
+                  value={category}
+                  onChange={handleCategoryChange}
+                  disabled={isLoading}
+                >
+                  <option value="">Select Category</option>
+                  {[
+                    "Productive Effort",
+                    "System/Power issue",
+                    "Leave",
+                    "Permission",
+                    "Assignment",
+                    "Project",
+                    "Other",
+                    "Practice",
+                  ].map((category, index) => (
+                    <option value={category} key={index}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="src-button">
+                <button
+                  onClick={handleSubmit}
+                  disabled={isLoading}
+                >
+                  <img
+                    src="https://admin.aspiraskillhub.aspirasys.com/images/search.png"
+                    alt="Search"
+                  />
+                </button>
+              </div>
+              <div className="src-button">
+                <button
+                  type="button"
+                  className="reset-button"
+                  onClick={handleReset}
+                  disabled={isLoading}
+                >
+                  <img
+                    src="https://admin.aspiraskillhub.aspirasys.com/images/rotate-left.png"
+                    alt="Reset"
+                  />
+                  Reset
+                </button>
+              </div>
+            </div>
+          </form>
 
-            <div className="tab">
-              <table className="tab-cols">
-                <thead>
-                  <tr className="odd odd1">
-                    <td>#</td>
-                    <td>Date</td>
-                    <td>Activity</td>
-                    <td>Description</td>
-                    <td>Hours</td>
-                    <td>Link</td>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredStudents.length > 0 ? (
-                    paginatedTechStacks.map((student, index) => (
-                      <tr className="odd" key={index}>
-                        <td>{(currentPage - 1) * 10 + index + 1}</td>
-                        <td className="cut-text">{student.date}</td>
-                        <td>{student.type}</td>
-                        <td className="cut-text">{student.description}</td>
-                        <td>{student.hours}</td>
-                        <td className="cut-text">{student.links}</td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr className="odd odd2">
-                      <td colSpan="7">No data available in the table</td>
+          <Heading title="Timesheet" />
+
+          <div className="list-cont">
+            <div className="container-2">
+              <div className="header">
+                <div className="searchBox">
+                  <input
+                    type="text"
+                    placeholder="Search"
+                    value={searchQuery}
+                    onChange={handleSearch}
+                    disabled={isLoading}
+                  />
+                </div>
+                <Button className="exportBtn" disabled={isLoading}>
+                  Export XLS
+                </Button>
+              </div>
+
+              <div className="tab">
+                <table className="tab-cols">
+                  <thead>
+                    <tr className="odd odd1">
+                      <td>#</td>
+                      <td>Date</td>
+                      <td>Activity</td>
+                      <td>Description</td>
+                      <td>Hours</td>
+                      <td>Link</td>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {isLoading ? (
+                      <tr className="odd odd2">
+                        <td colSpan="7" style={{ textAlign: 'center' }}>
+                          Loading timesheet data...
+                        </td>
+                      </tr>
+                    ) : filteredStudents.length > 0 ? (
+                      paginatedTechStacks.map((student, index) => (
+                        <tr className="odd" key={`${student.id}-${index}`}>
+                          <td>{(currentPage - 1) * 10 + index + 1}</td>
+                          <td className="cut-text">{student.date}</td>
+                          <td>{idToType[student.type] || student.type}</td>
+                          <td className="cut-text">{student.description}</td>
+                          <td>{student.hours}</td>
+                          <td className="cut-text">{student.links}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr className="odd odd2">
+                        <td colSpan="7">No data available in the table</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-        </div>
-        {filteredStudents.length > 10 && (
-          <div className="pagination">
-            <Button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
-              disabled={currentPage === 1}
-            >
-              Prev
-            </Button>
-            {[...Array(pages)].map((_, i) => (
-              <button
-                key={i + 1}
-                onClick={() => setCurrentPage(i + 1)}
-                style={{
-                  padding: '8px 16px',
-                  border: 'none',
-                  borderRadius: '5px',
-                  backgroundColor: currentPage === i + 1 ? '#3282c4' : 'transparent', // Active color changed
-                  color: currentPage === i + 1 ? 'white' : '#3282c4',
-                  cursor: 'pointer',
-                  margin: '0 5px',
-                  boxShadow: currentPage === i + 1 ? 'none' : 'rgba(0, 0, 0, 0.2) 0px 0px 1px 1px',
-                }}
+          {filteredStudents.length > 10 && (
+            <div className="pagination">
+              <Button
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
+                disabled={currentPage === 1 || isLoading}
               >
-                {i + 1}
-              </button>
-            ))}
-            <Button
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pages))}
-              style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
-              disabled={currentPage === pages}
-            >
-              Next
-            </Button>
-          </div>
-        )}
-      </div>
-    </Wrapper>
+                Prev
+              </Button>
+              {[...Array(pages)].map((_, i) => (
+                <button
+                  key={i + 1}
+                  onClick={() => setCurrentPage(i + 1)}
+                  disabled={isLoading}
+                  style={{
+                    padding: '8px 16px',
+                    border: 'none',
+                    borderRadius: '5px',
+                    backgroundColor: currentPage === i + 1 ? '#3282c4' : 'transparent',
+                    color: currentPage === i + 1 ? 'white' : '#3282c4',
+                    cursor: 'pointer',
+                    margin: '0 5px',
+                    boxShadow: currentPage === i + 1 ? 'none' : 'rgba(0, 0, 0, 0.2) 0px 0px 1px 1px',
+                  }}
+                >
+                  {i + 1}
+                </button>
+              ))}
+              <Button
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pages))}
+                style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
+                disabled={currentPage === pages || isLoading}
+              >
+                Next
+              </Button>
+            </div>
+          )}
+        </div>
+      </Wrapper>
+    </>
   );
 };
 

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import axios from "axios";
 import styled from "styled-components";
 import Heading from "../../Components/Heading";
 import { Link, useLocation } from "react-router-dom";
@@ -275,6 +276,10 @@ const Wrapper = styled.section`
         font-weight: 500;
         color: #333335;
       }
+
+      .actionBtn {
+        margin-left: 10px;
+      }
     }
 
     p {
@@ -341,37 +346,74 @@ const Wrapper = styled.section`
   }
 `;
 const MasterDataView = () => {
-  const { state } = useLocation();
-  const aspirant = state?.aspirant || {};
+  const location = useLocation();
+  console.log("Location Object:", location);  // Debugging
+
+  const { aspirantId, userId, techName, formattedData } = location.state || {};  // Safe destructuring
+
+  console.log("Aspirant ID:", aspirantId);
+  console.log("User ID:", userId);
+  console.log("Formatted Data:", formattedData);
+
+  const [aspirant, setAspirant] = useState(() => {
+    // ✅ Safely get data from location.state
+    const { formattedData } = location.state || {};
+    return formattedData || {}; // Fallback to empty object
+  });
+
+  useEffect(() => {
+    // ✅ Only fetch if userId exists AND formattedData wasn't passed
+    if (userId && !location.state?.formattedData) {
+      const fetchData = async () => {
+        try {
+          const res = await axios.get(`http://localhost:5000/admin/masterdata/view/${userId}`);
+          console.log("API Response:", res.data); // Debug API data
+          setAspirant(res.data);
+        } catch (error) {
+          console.error("Fetch error:", error);
+        }
+      };
+      fetchData();
+    }
+  }, [userId, location.state]); // ✅ Add location.state to dependencies
+
+  const idToStatusMap = {
+    0: "Terminated",
+    1: "Hired",
+    2: "In Progress",
+    3: "Job Ready",
+  };
 
   const profileData = {
-    id: aspirant?.id,
-    name: aspirant?.name,
-    role: aspirant?.technology,
-    employment: "Full time (On-site)",
-    gender: aspirant.gender,
-    // dob: "1999-12-25",
-    // fatherName: "Irshad Ahmed V T",
-    // education: "BE - Mechanical",
-    // experience: "24 months",
-    joiningDate: aspirant.joiningDate,
-    endDate: aspirant.endDate,
-    contact: aspirant.phone,
-    contacts: aspirant.altPhone,
-    email: aspirant.email,
-    address: aspirant.location,
+    id: aspirant?.aspirant_id || "N/A",
+    name: aspirant?.first_name || "N/A", // ✅ Use first_name directly (logs show last_name is null)
+    role: aspirant?.designation === null ? "React Js" : "Unknown" || "N/A",
+    employment: aspirant?.mode === "1" ? "Full-time" : "Remote",
+    gender: aspirant?.gender || "N/A",
+    dob: aspirant?.dob ? new Date(aspirant.dob).toLocaleDateString() : "N/A",
+    fatherName: aspirant?.parent_name || "N/A",
+    education: aspirant?.graduation_details || "N/A",
+    experience: aspirant?.experience || "0 months",
+    joiningDate: aspirant?.join_date ? new Date(aspirant.join_date).toLocaleDateString("en-IN", { year: "numeric", month: "short", day: "numeric" }) : "N/A",
+    contact: aspirant?.mobile_no || "N/A",
+    contact_parent: aspirant?.parent_mobile_no || "N/A",
+    email: aspirant?.personal_email || "N/A",
+    address: aspirant?.address || "N/A",
     documents: {
-      aadhar: "Aadhar.pdf",
-      pan: "Pan.pdf",
+      aadhar: aspirant?.aadharcard_doc || "Not available",
+      pan: aspirant?.pancard_doc || "Not available",
     },
-    about: aspirant?.about,
-    jobStatus: "Hired", // Default job status
+    about: aspirant?.description || "No description available",
+    jobStatus: aspirant?.status || "Unknown", // ✅ Use `status` (already mapped in formattedData)
+    social: {
+      linkedIn: aspirant?.linkedIn_id || null,
+      github: aspirant?.gitHub_id || null,
+    },
   };
 
   // State for managing Job Status editing
   const [isEditing, setIsEditing] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState(profileData.jobStatus);
-
   const handleEditClick = () => {
     setIsEditing(true);
   };
@@ -380,8 +422,27 @@ const MasterDataView = () => {
     setSelectedStatus(event.target.value);
   };
 
-  const handleSaveClick = () => {
-    setIsEditing(false);
+  const handleSaveClick = async () => {
+    try {
+      // ✅ Find the numeric status key (e.g., "Hired" → 1)
+      const statusKey = Object.keys(idToStatusMap).find(
+        (key) => idToStatusMap[key] === selectedStatus
+      );
+
+      await axios.patch(
+        `http://localhost:5000/admin/masterdata/update/${userId}`,
+        { job_status: statusKey }
+      );
+
+      // ✅ Refresh data after update
+      const response = await axios.get(
+        `http://localhost:5000/admin/masterdata/view/${userId}`
+      );
+      setAspirant(response.data);
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Failed to update status:", error);
+    }
   };
 
   const handleCancelClick = () => {
@@ -396,166 +457,172 @@ const MasterDataView = () => {
 
   return (
     <Wrapper>
-      <div className="profile-container">
-        <div className="breadCrumb">
-          <Link to="/admin/master-data"> Master Data </Link>{" "}
-          <MdKeyboardArrowRight /> <span> {profileData.id} </span>
-        </div>
-        <div className="profile-content">
-          {/* Left Section */}
-          <div className="profile-left">
-            <div className="profile-card">
-              <div className="avatar-placeholder">
-                <img
-                  src="https://admin.aspiraskillhub.aspirasys.com/images/no-image.png"
-                  alt=""
-                />
-              </div>
-              <Heading title={profileData.name} />
-              <h6>{profileData.role}</h6>
-              <p>{profileData.employment}</p>
-              <div className="profile-info">
-                <h3>Profile Information</h3>
-                <p>
-                  <strong>Gender:</strong> {profileData.gender}
-                </p>
-                <p>
-                  <strong>Date of Birth:</strong> {profileData.dob}
-                </p>
-                <p>
-                  <strong>Father's Name:</strong> {profileData.fatherName}
-                </p>
-                <p>
-                  <strong>Education:</strong> {profileData.education}
-                </p>
-                <p>
-                  <strong>Experience (in month):</strong>{" "}
-                  {profileData.experience}
-                </p>
-                <p className="profile-social">
-                  <strong>Social:</strong>
-                  <div className="social-icons">
-                    <img
-                      src="https://admin.aspiraskillhub.aspirasys.com/images/linkedin.png"
-                      alt=""
-                    />
-                    <img
-                      src="https://admin.aspiraskillhub.aspirasys.com/images/instagram.png"
-                      alt=""
-                    />
-                    <img
-                      src="https://admin.aspiraskillhub.aspirasys.com/images/github.png"
-                      alt=""
-                    />
-                  </div>
-                </p>
-              </div>
-            </div>
+      {!aspirant?.aspirant_id ? (
+        <div>No aspirant data found for ID: {userId || "Unknown"}</div>
+      ) : (
+        <div className="profile-container">
+          <div className="breadCrumb">
+            <Link to="/admin/master-data"> Master Data </Link>{" "}
+            <MdKeyboardArrowRight /> <span> {aspirant.aspirant_id} </span>
           </div>
-
-          {/* Right Section */}
-          <div className="profile-right">
-            <div className="about-section">
-              <div className="about-header">
-                <h3>About</h3>
-                <button className="resume-btn">
+          <div className="profile-content">
+            {/* Left Section */}
+            <div className="profile-left">
+              <div className="profile-card">
+                <div className="avatar-placeholder">
                   <img
-                    src="https://admin.aspiraskillhub.aspirasys.com/images/frame.svg"
+                    src="https://admin.aspiraskillhub.aspirasys.com/images/no-image.png"
                     alt=""
                   />
-                  Resume
-                </button>
-              </div>
-              <p className="para">{profileData.about}</p>
-              <div className="profile-date">
-                <p>
-                  <strong>Date of Joining :</strong> {profileData.joiningDate}
-                </p>
-                <p>
-                  <strong>Date of End :</strong> {profileData.endDate}
-                </p>
-              </div>
-              <div className="profile-data">
-                <p>
-                  <strong>
-                    <img
-                      src="https://admin.aspiraskillhub.aspirasys.com/images/phone.png"
-                      alt=""
-                    />
-                  </strong>{" "}
-                  {profileData.contact}
-                </p>
-                <p>
-                  <strong>
-                    <img
-                      src="https://admin.aspiraskillhub.aspirasys.com/images/email.png"
-                      alt=""
-                    />
-                  </strong>{" "}
-                  {profileData.email}
-                </p>
-                <p>
-                  <strong>
-                    <img
-                      src="https://admin.aspiraskillhub.aspirasys.com/images/location.png"
-                      alt=""
-                    />
-                  </strong>{" "}
-                  {profileData.address}
-                </p>
-                <p>
-                  <strong>
-                    <img
-                      src="https://admin.aspiraskillhub.aspirasys.com/images/call.png"
-                      alt=""
-                    />
-                  </strong>{" "}
-                  {profileData.contacts}
-                </p>
-              </div>
-            </div>
-            <div className="documents-section">
-              <h3 className="docHead">Documents</h3>
-              <div className="documents-list">
-                <div className="list">
-                  <h6>Aadhar Card</h6>
+                </div>
+                <Heading title={aspirant.first_name} />
+                <h6>{techName}</h6>
+                <p>{profileData.employment}</p>
+                <div className="profile-info">
+                  <h3>Profile Information</h3>
                   <p>
-                    <strong>
+                    <strong>Gender:</strong> {profileData.gender}
+                  </p>
+                  <p>
+                    <strong>Date of Birth:</strong> {profileData.dob}
+                  </p>
+                  <p>
+                    <strong>Father's Name:</strong> {profileData.fatherName}
+                  </p>
+                  <p>
+                    <strong>Education:</strong> {profileData.education}
+                  </p>
+                  <p>
+                    <strong>Experience (in month):</strong>{" "}
+                    {profileData.experience}
+                  </p>
+                  <p className="profile-social">
+                    <strong>Social:</strong>
+                    <div className="social-icons">
                       <img
-                        src="https://admin.aspiraskillhub.aspirasys.com/images/pdf.png"
+                        src="https://admin.aspiraskillhub.aspirasys.com/images/linkedin.png"
                         alt=""
                       />
-                    </strong>
-                    <a download>{profileData.documents.aadhar}</a>
-                    <img
-                      src="https://admin.aspiraskillhub.aspirasys.com/images/export-pro.png"
-                      alt=""
-                    />
+                      <img
+                        src="https://admin.aspiraskillhub.aspirasys.com/images/instagram.png"
+                        alt=""
+                      />
+                      <img
+                        src="https://admin.aspiraskillhub.aspirasys.com/images/github.png"
+                        alt=""
+                      />
+                    </div>
                   </p>
                 </div>
-                <div className="list">
-                  <h6>Pan Card</h6>
+              </div>
+            </div>
+
+            {/* Right Section */}
+            <div className="profile-right">
+              <div className="about-section">
+                <div className="about-header">
+                  <h3>About</h3>
+                  <button className="resume-btn">
+                    <img
+                      src="https://admin.aspiraskillhub.aspirasys.com/images/frame.svg"
+                      alt=""
+                    />
+                    Resume
+                  </button>
+                </div>
+                <p className="para">{profileData.about}</p>
+                <div className="profile-date">
+                  <p>
+                    <strong>Date of Joining :</strong> {profileData.joiningDate}
+                  </p>
+                  <p>
+                    <strong>Date of End :</strong> -
+                  </p>
+                </div>
+                <div className="profile-data">
                   <p>
                     <strong>
                       <img
-                        src="https://admin.aspiraskillhub.aspirasys.com/images/pdf.png"
+                        src="https://admin.aspiraskillhub.aspirasys.com/images/phone.png"
                         alt=""
                       />
                     </strong>{" "}
-                    <a download>{profileData.documents.pan}</a>
-                    <img
-                      src="https://admin.aspiraskillhub.aspirasys.com/images/export-pro.png"
-                      alt=""
-                    />
+                    {profileData.contact}
+                  </p>
+                  <p>
+                    <strong>
+                      <img
+                        src="https://admin.aspiraskillhub.aspirasys.com/images/email.png"
+                        alt=""
+                      />
+                    </strong>{" "}
+                    {aspirant.personal_email}
+                  </p>
+                  <p>
+                    <strong>
+                      <img
+                        src="https://admin.aspiraskillhub.aspirasys.com/images/location.png"
+                        alt=""
+                      />
+                    </strong>{" "}
+                    {aspirant.address}
+                  </p>
+                  <p>
+                    <strong>
+                      <img
+                        src="https://admin.aspiraskillhub.aspirasys.com/images/call.png"
+                        alt=""
+                      />
+                    </strong>{" "}
+                    {profileData.contact_parent}
                   </p>
                 </div>
               </div>
-            </div>
-            <div className="documents-section">
-              <h3>Job Status</h3>
-              <div className="documents-list">
-                {["In-Progress", "Hired", "Terminated", "Job Ready"].map(
-                  (status) => (
+              <div className="documents-section">
+                <h3 className="docHead">Documents</h3>
+                <div className="documents-list">
+                  <div className="list">
+                    <h6>Aadhar Card</h6>
+                    <p>
+                      <strong>
+                        <img
+                          src="https://admin.aspiraskillhub.aspirasys.com/images/pdf.png"
+                          alt=""
+                        />
+                      </strong>
+                      <a download>{profileData.documents.aadhar}
+                        <img
+                          className="actionBtn"
+                          src="https://admin.aspiraskillhub.aspirasys.com/images/export-pro.png"
+                          alt=""
+                        />
+                      </a>
+                    </p>
+                  </div>
+                  <div className="list">
+                    <h6>Pan Card</h6>
+                    <p>
+                      <strong>
+                        <img
+                          src="https://admin.aspiraskillhub.aspirasys.com/images/pdf.png"
+                          alt=""
+                        />
+                      </strong>{" "}
+                      <a download>{profileData.documents.pan}
+                        <img
+                          className="actionBtn"
+                          src="https://admin.aspiraskillhub.aspirasys.com/images/export-pro.png"
+                          alt=""
+                        />
+                      </a>
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="documents-section">
+                <h3>Job Status</h3>
+                <div className="documents-list">
+                  {Object.values(idToStatusMap).map((status) => (
                     <p className="job-status" key={status}>
                       <input
                         type="radio"
@@ -563,36 +630,32 @@ const MasterDataView = () => {
                         id={status}
                         disabled={!isEditing}
                         checked={selectedStatus === status}
-                        onChange={handleStatusChange}
+                        onChange={(e) => setSelectedStatus(e.target.value)}
                       />
-                      <label
-                        htmlFor={status}
-                        style={{ opacity: isEditing ? 1 : 0.75 }}
-                      >
-                        {status}
-                      </label>
+                      <label htmlFor={status}>{status}</label>
                     </p>
-                  )
-                )}
-                {!isEditing ? (
-                  <button className="job-edit" onClick={handleEditClick}>
-                    Edit
-                  </button>
-                ) : (
-                  <div>
-                    <button className="job-save" onClick={handleSaveClick}>
-                      Save
+                  ))}
+
+                  {!isEditing ? (
+                    <button className="job-edit" onClick={handleEditClick}>
+                      Edit
                     </button>
-                    <button className="job-cancel" onClick={handleCancelClick}>
-                      Cancel
-                    </button>
-                  </div>
-                )}
+                  ) : (
+                    <div>
+                      <button className="job-save" onClick={handleSaveClick}>
+                        Save
+                      </button>
+                      <button className="job-cancel" onClick={() => setIsEditing(false)}>
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </Wrapper>
   );
 };

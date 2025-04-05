@@ -218,7 +218,8 @@ const Wrapper = styled.section`
   }
 
   .mail-popup {
-    width: 70%;
+    width: 90%;
+    max-width: 950px;
     height: auto;
     background-color: white;
     margin: 20px auto;
@@ -232,8 +233,8 @@ const Wrapper = styled.section`
     display: none;
     flex-direction: row;
     align-items: center;
-    flex-wrap: wrap;
     box-shadow: 0 0 0 100rem #3b3a3957;
+    z-index: 999;
 
     .mail-image {
       width: 250px;
@@ -339,16 +340,18 @@ const Wrapper = styled.section`
   }
   @media (max-width: 1429px) {
     .mail-popup {
-      justify-content: center;
+      width: fit-content;
+      max-width: 90%;
       align-items: center;
-    }
-    .mail-popup .mail-image {
-      display: none;
     }
   }
   @media (max-width: 1024px) {
     .aspirant-table {
       overflow-x: scroll;
+    }
+
+    .mail-popup .mail-image {
+      display: none;
     }
   }
   @media (max-width: 768px) {

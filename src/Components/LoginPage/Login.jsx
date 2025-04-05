@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { Link, useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import axios from "axios";
+import { jwtDecode } from "jwt-decode";
 
 
 const Wrapper = styled.section`
@@ -166,14 +167,13 @@ input {
 `;
 
 const Login = ({ onLogin, onReset }) => {
-  // Set fixed dummy credentials as initial state
-  const [email, setEmail] = useState("test@example.com");
-  const [password, setPassword] = useState("test123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const newErrors = {};
@@ -183,15 +183,38 @@ const Login = ({ onLogin, onReset }) => {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
-      // Check against fixed credentials
-      if (email === "test@example.com" && password === "test123") {
-        // Simulate successful login
-        const dummyToken = "dummy_jwt_token";
-        localStorage.setItem("token", dummyToken);
-        onLogin(dummyToken);
+      try {
+        const response = await axios.post("http://localhost:48857/api/admin/login", {
+          email,
+          password,
+        });
+
+        const data = response.data;
+
+        if (response.status !== 200) {
+          throw new Error(data.error || "Login failed.");
+        }
+
+        // Store token
+        localStorage.setItem("token", data.token);
+
+        // ✅ Decode token to extract user details
+        const decodedToken = jwtDecode(data.token);
+        localStorage.setItem("user_id", decodedToken.user_id);
+        localStorage.setItem("role_id", decodedToken.role);
+        localStorage.setItem("username", decodedToken.name);
+
+        console.log("User ID:", decodedToken.user_id);
+        console.log("Role ID:", decodedToken.role);
+        console.log("Username:", decodedToken.name);
+
+        // Pass username along with token
+        onLogin(data.token, decodedToken.username);
+
         navigate("/");
-      } else {
-        setErrors({ password: "Invalid credentials - use test@example.com / test123" });
+      } catch (error) {
+        const errorMessage = error.response?.data?.error || error.message;
+        setErrors({ password: errorMessage });
       }
     }
   };
@@ -199,9 +222,12 @@ const Login = ({ onLogin, onReset }) => {
   return (
     <Wrapper>
       <div className="login-container">
+        {/* Left illustration section */}
         <div className="login-illustration">
           <div className="illustration-content"></div>
         </div>
+
+        {/* Login form */}
         <div className="login-form-container">
           <div className="login-form">
             <div className="logo">
@@ -211,9 +237,6 @@ const Login = ({ onLogin, onReset }) => {
               />
             </div>
             <h2>Login Your Account</h2>
-            <div className="dummy-hint" style={{ marginBottom: '1rem', color: '#666' }}>
-              Use test@example.com / test123
-            </div>
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label htmlFor="email">Admin ID</label>
@@ -237,6 +260,7 @@ const Login = ({ onLogin, onReset }) => {
                     className={`password-input ${errors.password ? "input-error" : ""}`}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+
                   />
                   <span className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
                     {showPassword ? <FaEye /> : <FaEyeSlash />}
@@ -260,44 +284,37 @@ const Login = ({ onLogin, onReset }) => {
 
 export default Login;
 
+//-----------------------------------------------------//
+
+// Dummy Login (In case of no API) //
+
 // const Login = ({ onLogin, onReset }) => {
-//   const [email, setEmail] = useState("");
-//   const [password, setPassword] = useState("");
+//   // Set fixed dummy credentials as initial state
+//   const [email, setEmail] = useState("test@example.com");
+//   const [password, setPassword] = useState("test123");
 //   const [errors, setErrors] = useState({ email: "", password: "" });
 //   const [showPassword, setShowPassword] = useState(false);
 //   const navigate = useNavigate();
 
-//   const handleSubmit = async (e) => {
+//   const handleSubmit = (e) => {
 //     e.preventDefault();
-  
+
 //     const newErrors = {};
 //     if (!email) newErrors.email = "Email is required.";
 //     if (!password) newErrors.password = "Password is required.";
-  
+
 //     setErrors(newErrors);
-  
+
 //     if (Object.keys(newErrors).length === 0) {
-//       try {
-//         const response = await axios.post("http://localhost:48857/api/admin/login", {
-//           email,
-//           password
-//         });
-  
-//         // Axios puts response data in response.data
-//         const data = response.data;
-        
-//         // Check for successful status code
-//         if (response.status !== 200) {
-//           throw new Error(data.error || "Login failed.");
-//         }
-  
-//         localStorage.setItem("token", data.token);
-//         onLogin(data.token);
+//       // Check against fixed credentials
+//       if (email === "test@example.com" && password === "test123") {
+//         // Simulate successful login
+//         const dummyToken = "dummy_jwt_token";
+//         localStorage.setItem("token", dummyToken);
+//         onLogin(dummyToken);
 //         navigate("/");
-//       } catch (error) {
-//         // Axios wraps errors, use error.response for server errors
-//         const errorMessage = error.response?.data?.error || error.message;
-//         setErrors({ password: errorMessage });
+//       } else {
+//         setErrors({ password: "Invalid credentials - use test@example.com / test123" });
 //       }
 //     }
 //   };
@@ -305,12 +322,9 @@ export default Login;
 //   return (
 //     <Wrapper>
 //       <div className="login-container">
-//         {/* Left illustration section */}
 //         <div className="login-illustration">
 //           <div className="illustration-content"></div>
 //         </div>
-
-//         {/* Login form */}
 //         <div className="login-form-container">
 //           <div className="login-form">
 //             <div className="logo">
@@ -320,6 +334,9 @@ export default Login;
 //               />
 //             </div>
 //             <h2>Login Your Account</h2>
+//             <div className="dummy-hint" style={{ marginBottom: '1rem', color: '#666' }}>
+//               Use test@example.com / test123
+//             </div>
 //             <form onSubmit={handleSubmit}>
 //               <div className="form-group">
 //                 <label htmlFor="email">Admin ID</label>

@@ -63,7 +63,7 @@ const Wrapper = styled.section`
     .addPopup, .editPopup {
       width: 90%;
       max-width: 900px;
-      height: 500px;
+      height: 520px;
       margin: 0 auto;
       text-align: center;
       display: none;
@@ -76,10 +76,9 @@ const Wrapper = styled.section`
       position: fixed;
       top: 50%;
       left: 50%;
-      padding: 25px 30px 30px;
-      transform: translate(-50%, -50%);
-      overflow-y: auto;
-      
+      padding: 25px 30px 60px;
+      transform: translate(-50%, -50%);   
+      z-index: 999;   
 
       h1 {
         width: 100%;
@@ -110,12 +109,12 @@ const Wrapper = styled.section`
         justify-content: space-between;
         align-items: center;
         flex-direction: column;
+        overflow-y: auto;
       }
 
       .forms-line {
         width: 100%;
         height: auto;
-        /* max-height: 300px; */
         display: flex;
         justify-content: space-between;
         margin: 10px 0;
@@ -158,8 +157,12 @@ const Wrapper = styled.section`
 
       .form-btn {
         width: 100%;
-        padding: 10px;
-        color: white;
+        height: auto;
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        padding: 10px 30px;
+        background-color: white;
         border: none;
         border-radius: 5px;
         flex-direction: row;
@@ -185,7 +188,7 @@ const Wrapper = styled.section`
         color: #767A7A;
       }
 
-      input {
+      input, select {
         width: 100%;
         padding: 12px 20px;
         background-color: #DEDEDE1A;
@@ -196,12 +199,14 @@ const Wrapper = styled.section`
 
       textarea {
         width: 100%;
+        max-width: 100%;
+        min-width: 100%;
         border: 1px solid #ddd;
         height: 100px;
+        max-height: 100px;
+        min-height: 100px;
         border-radius: 5px;
         padding: 10px;
-        max-width: 380px;
-        // min-width: 380px;
         min-height: 51px;
         outline: none;
       }
@@ -545,6 +550,7 @@ const Wrapper = styled.section`
     justify-content: end;
     align-items: end;
   }
+
   input.search{
     max-width: 150px;
     padding: 8px 12px;
@@ -556,8 +562,6 @@ const Wrapper = styled.section`
     overflow-x: auto;
   }
   .edit-btn {
-    // width: 120px;
-    // height: 50px;
     background-color: #007bff;
     color: white;
     font-size: 14px;
@@ -572,7 +576,11 @@ const Wrapper = styled.section`
     }
   }
   @media (max-width:768px){
-   
+  
+  .addPopup, .editPopup {    
+    max-height: 80%;
+  }
+
     .forms-line{
       flex-direction: column;
       padding: 10px;
@@ -594,24 +602,24 @@ const Events = () => {
   const [events, setEvents] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
-  const [showEventContent, setShowEventContent] = useState(true);
   const [deleteId, setDeleteId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
   // Fetch events from the backend
   useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        const response = await fetch("http://localhost:48857/api/admin/events");
-        if (!response.ok) throw new Error("Failed to fetch events");
-        const data = await response.json();
-        setEvents(data);
-      } catch (error) {
-        console.error("Error fetching events:", error);
-      }
-    };
     fetchEvents();
   }, []);
+  const fetchEvents = async () => {
+    try {
+      const response = await fetch("http://localhost:48857/api/admin/events");
+      if (!response.ok) throw new Error("Failed to fetch events");
+      const data = await response.json();
+      setEvents(data);
+    } catch (error) {
+      console.error("Error fetching events:", error);
+    }
+  };
+
 
   const closePopup = () => {
     document.querySelector(".addPopup").style.display = "none";
@@ -637,11 +645,13 @@ const Events = () => {
       title: e.target.eventName.value,
       description: e.target.eventDescription.value,
       date: e.target.eventDate.value,
-      time: e.target.eventTime.value,
-      mode: e.target.mode.value, // Added mode field
+      time: e.target.eventTime.value + ":00", // Add seconds to the time
+      mode: null,
       joining_link: e.target.eventLink.value,
       created_by: 1, // Replace with actual user ID
     };
+
+    console.log("Request Payload:", newEvent); // Log the payload
 
     try {
       const response = await fetch("http://localhost:48857/api/admin/events", {
@@ -650,19 +660,17 @@ const Events = () => {
         body: JSON.stringify(newEvent),
       });
 
-      if (!response.ok) throw new Error("Failed to create event");
-
-      // Refresh events list
-      const updatedResponse = await fetch("/api/events");
-      const updatedData = await updatedResponse.json();
-      setEvents(updatedData);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to create event");
+      }
+      fetchEvents();
       closePopup();
-      setShowEventContent(false);
     } catch (error) {
       console.error("Error:", error);
+      alert(error.message); // Display error message to the user
     }
   };
-
   // Handle Delete Event
   const handleDelete = async () => {
     try {
@@ -672,10 +680,7 @@ const Events = () => {
 
       if (!response.ok) throw new Error("Failed to delete event");
 
-      // Refresh events list
-      const updatedResponse = await fetch("/api/events");
-      const updatedData = await updatedResponse.json();
-      setEvents(updatedData);
+      setEvents(events.filter(event => event.id !== deleteId)); // Update local state
       deleteNo();
     } catch (error) {
       console.error("Error:", error);
@@ -689,7 +694,6 @@ const Events = () => {
       setSelectedEvent(eventToEdit);
       document.querySelector(".editPopup").style.display = "flex";
     }
-    setShowModal(false);
   };
 
   const closeEditPopup = () => {
@@ -700,17 +704,22 @@ const Events = () => {
   // Handle Update Event
   const handleEditSubmit = async (e) => {
     e.preventDefault();
+
+    console.log("Selected Event:", selectedEvent);
+    console.log("Date Value:", e.target.eventDate.value);
+    console.log("Time Value:", e.target.eventTime.value);
+  
     const updatedEvent = {
       title: e.target.eventName.value,
       description: e.target.eventDescription.value,
       date: e.target.eventDate.value,
       time: e.target.eventTime.value,
-      mode: e.target.mode.value, // Added mode field
+      mode: null,
       joining_link: e.target.eventLink.value,
     };
 
     try {
-      const response = await fetch(`http://localhost:48857/api/admin/events/4`, {
+      const response = await fetch(`http://localhost:48857/api/admin/events/${selectedEvent.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedEvent),
@@ -718,10 +727,9 @@ const Events = () => {
 
       if (!response.ok) throw new Error("Failed to update event");
 
-      // Refresh events list
-      const updatedResponse = await fetch("http://localhost:48857/api/admin/events/4");
-      const updatedData = await updatedResponse.json();
-      setEvents(updatedData);
+      const updatedEventData = await response.json();
+      setEvents(events.map(event => event.id === selectedEvent.id ? updatedEventData : event)); // Update local state
+      fetchEvents();
       closeEditPopup();
     } catch (error) {
       console.error("Error:", error);
@@ -737,12 +745,11 @@ const Events = () => {
   const closeModal = () => {
     setSelectedEvent(null);
     setShowModal(false);
-    document.querySelector(".deletePopup").style.display = "none";
   };
 
   // Filter events based on search term
-  const filteredEvents = events.filter((event) =>
-    event.title.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredEvents = events.filter(event =>
+    event.title?.toLowerCase().includes(searchTerm?.toLowerCase())
   );
 
   return (
@@ -777,44 +784,36 @@ const Events = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredEvents.length > 0 ? (
-                      filteredEvents.map((event) => (
-                        <tr className="row" key={event.id}>
-                          <td>{event.id}</td>
-                          <td>{event.title}</td>
-                          <td className="cut-text">
-                            <a href="#" onClick={() => handleView(event)}>
-                              {event.joining_link}
-                            </a>
-                          </td>
-                          <td className="cut-text">{event.description}</td>
-                          <td>{`${event.date} ${event.time}`}</td>
-                          <td className="actions">
-                            <img
-                              src="https://admin.aspiraskillhub.aspirasys.com/images/eye.png"
-                              alt="View"
-                              onClick={() => handleView(event)}
-                            />
-                            <img
-                              src="https://admin.aspiraskillhub.aspirasys.com/images/edit-2.png"
-                              alt="Edit"
-                              onClick={() => handleEdit(event.id)}
-                            />
-                            <img
-                              src="https://admin.aspiraskillhub.aspirasys.com/images/trash.png"
-                              alt="Delete"
-                              onClick={() => deleteOpenPopup(event.id)}
-                            />
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="6" style={{ textAlign: "center" }}>
-                          No data available in the table
+                    {filteredEvents.map((event, index) => (
+                      <tr className="row" key={event.id}>
+                        <td>{index + 1}</td>
+                        <td>{event.title}</td>
+                        <td className="cut-text">
+                          <a href="#" onClick={() => handleView(event)}>
+                            {event.joining_link}
+                          </a>
+                        </td>
+                        <td className="cut-text">{event.description}</td>
+                        <td className="cut-text">{`${event.date} ${event.time}`}</td>
+                        <td className="actions">
+                          <img
+                            src="https://admin.aspiraskillhub.aspirasys.com/images/eye.png"
+                            alt="View"
+                            onClick={() => handleView(event)}
+                          />
+                          <img
+                            src="https://admin.aspiraskillhub.aspirasys.com/images/edit-2.png"
+                            alt="Edit"
+                            onClick={() => handleEdit(event.id)}
+                          />
+                          <img
+                            src="https://admin.aspiraskillhub.aspirasys.com/images/trash.png"
+                            alt="Delete"
+                            onClick={() => deleteOpenPopup(event.id)}
+                          />
                         </td>
                       </tr>
-                    )}
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -822,7 +821,7 @@ const Events = () => {
           </div>
         ) : (
           <div className="event-content">
-            <img src="https://admin.aspiraskillhub.aspirasys.com/images/events.png" />
+            <img src="https://admin.aspiraskillhub.aspirasys.com/images/events.png" alt="No Events" />
             <h2>"No Events & Info Found"</h2>
             <button onClick={openPopup}>+ Add Event</button>
           </div>
@@ -832,11 +831,11 @@ const Events = () => {
         <div className="deletePopup">
           <span onClick={deleteNo} className="close">
             <p>
-              <img src="https://admin.aspiraskillhub.aspirasys.com/images/close-circle.png" alt="" />
+              <img src="https://admin.aspiraskillhub.aspirasys.com/images/close-circle.png" alt="Close" />
             </p>
           </span>
           <div className="del-icon">
-            <img src="https://admin.aspiraskillhub.aspirasys.com/images/mdi_trash.png" alt="delete" />
+            <img src="https://admin.aspiraskillhub.aspirasys.com/images/mdi_trash.png" alt="Delete" />
           </div>
           <h3>Are You Sure?</h3>
           <p>To delete the Weekly event</p>
@@ -878,7 +877,7 @@ const Events = () => {
                   required
                 />
                 <div className="paste">
-                  <img src="https://admin.aspiraskillhub.aspirasys.com/images/paste.png" />
+                  <img src="https://admin.aspiraskillhub.aspirasys.com/images/paste.png" alt="Paste" />
                 </div>
               </div>
             </div>
@@ -909,7 +908,7 @@ const Events = () => {
                 </select>
               </div>
             </div>
-            <div className="forms-line">
+            <div className="forms-line form-btn">
               <div className="form-line form-btn">
                 <button type="button" className="cancel-btn" onClick={closePopup}>
                   Cancel
@@ -979,7 +978,7 @@ const Events = () => {
                     type="date"
                     id="eventDate"
                     name="eventDate"
-                    value={selectedEvent?.date || ""}
+                    value={selectedEvent?.date ? new Date(selectedEvent.date).toISOString().split('T')[0] : ""}
                     onChange={(e) =>
                       setSelectedEvent((prev) => ({ ...prev, date: e.target.value }))
                     }
@@ -989,7 +988,7 @@ const Events = () => {
                     type="time"
                     id="eventTime"
                     name="eventTime"
-                    value={selectedEvent?.time || ""}
+                    value={selectedEvent?.time ? selectedEvent.time.slice(0, 5) : ""}
                     onChange={(e) =>
                       setSelectedEvent((prev) => ({ ...prev, time: e.target.value }))
                     }

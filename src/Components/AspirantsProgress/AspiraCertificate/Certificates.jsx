@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { NavLink } from 'react-router-dom';
 import { AiTwotoneEye } from 'react-icons/ai';
 import Heading from '../../Heading';
 import Button from '../../Button';
+import Loader from '../../Loader';
 
 const Wrapper = styled.section`
 
@@ -25,7 +26,7 @@ const Wrapper = styled.section`
   }
 
   .searchBox {
-    width: 17%;
+    // width: 17%;
     text-align: end;
 
     input {
@@ -130,7 +131,7 @@ const Wrapper = styled.section`
   }
 
   .searchBox {
-    width: 17%;
+    // width: 17%;
     text-align: end;
 
     input {
@@ -209,37 +210,34 @@ const Wrapper = styled.section`
 `;
 
 const Certificates = () => {
+  const [students, setStudents] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [error, setError] = useState(null);
 
-  const [students, setStudents] = useState([
-    { id: 'ASPT0244', techName: 'Basic Web Tech', name: 'Ibrahim.K', certificate: '-', },
-    { id: 'ASPT0245', techName: 'React JS', name: 'Iqyan', certificate: '-', },
-  ]);
-
-  const [searchQuery, setSearchQuery] = useState('');
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const response = await fetch("http://localhost:3000/admin/aspirants-certificates");
+        if (!response.ok) throw new Error("Failed to fetch data");
+        const data = await response.json();
+        setStudents(data);
+      } catch (error) {
+        setError(error.message);
+      }
+    };
+    fetchStudents();
+  }, []);
 
   const handleSearchChange = (e) => setSearchQuery(e.target.value);
 
   const filteredStudents = students.filter(
     (student) =>
-      student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.id.toLowerCase().includes(searchQuery.toLowerCase())
+      student.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      student.aspirant_id.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
     <Wrapper>
-
-      {/* <nav aria-label="breadcrumb">
-          <ol className="breadcrumb ad-sck">
-            <li className="breadcrumb-item">
-              <Link to="/admin/aspirants-progress">
-                Timesheet
-              </Link>
-            </li>
-            <li className="breadcrumb-item active" aria-current="page">
-              / ASP0450
-            </li>
-          </ol>
-        </nav> */}
       <div className="dateSec">
         <Heading title="Certificates" />
         <div className="list-cont">
@@ -253,49 +251,54 @@ const Certificates = () => {
                   onChange={handleSearchChange}
                 />
               </div>
-              <Button className="exportBtn">
-                Export XLS
-              </Button>
+              <Button className="exportBtn">Export XLS</Button>
             </div>
-            <div className="tab">
-              <table className="tab-cols">
-                <thead>
-                  <tr className="odd odd1">
-                    <td>#</td>
-                    <td>Aspira ID</td>
-                    <td>Technology Name</td>
-                    <td>Name</td>
-                    <td>Certificates</td>
-                    <td>Action</td>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredStudents.map((student, index) => (
-                    <tr className="odd" key={index}>
-                      <td>{index + 1}</td>
-                      <td>{student.id}</td>
-                      <td>{student.techName}</td>
-                      <td>{student.name}</td>
-                      <td>{student.certificate}</td>
-                      <td className="stack-output">
-                        <NavLink
-                          to='/admin/aspirants-progress/aspirant-certificate'
-                          state={{ studentId: student.id, studentName: student.name }}
-                        >
-                          <button>
-                            <img src="https://admin.aspiraskillhub.aspirasys.com/images/eye.png" />
-                          </button>
-                        </NavLink>
-                      </td>
+              <div className="tab">
+                <table className="tab-cols">
+                  <thead>
+                    <tr className="odd odd1">
+                      <td>#</td>
+                      <td>Aspira ID</td>
+                      <td>Technology Name</td>
+                      <td>Name</td>
+                      <td>Certificates</td>
+                      <td>Action</td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {filteredStudents.length === 0 && (
+                      <tr style={{textAlign: "center"}}>
+                        <td colSpan="6">No data found</td>
+                      </tr>
+                    )}
+                    {filteredStudents.map((student, index) => (
+                      <tr className="odd" key={index}>
+                        <td>{index + 1}</td>
+                        <td>{student.aspirant_id}</td>
+                        <td className='cut-text'>{student.technology_names || "-"}</td>
+                        <td>{student.first_name}</td>
+                        <td>{student.certificate || "-"}</td>
+                        <td className="stack-output">
+                          <NavLink
+                            to="/admin/aspirants-progress/aspirant-certificate"
+                            state={{ studentId: student.id, aspirantId: student.aspirant_id, studentName: student.first_name }}
+                          >
+                            <button>
+                              <img
+                                src="https://admin.aspiraskillhub.aspirasys.com/images/eye.png"
+                                alt="View"
+                              />
+                            </button>
+                          </NavLink>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
           </div>
         </div>
       </div>
-
     </Wrapper>
   );
 };

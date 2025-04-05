@@ -3,6 +3,7 @@ import { Route, Routes, Navigate, useNavigate } from 'react-router-dom';
 import DashboardLayout from './Components/DashboardLayout';
 import Login from './Components/LoginPage/Login';
 import Reset from './Components/LoginPage/Reset';
+import ResetPass from './Components/LoginPage/ResetPass';
 import Loader from './Components/Loader';
 
 const AuthContext = createContext();
@@ -26,7 +27,7 @@ const AuthProvider = ({ children }) => {
 
     const handleLogout = () => {
         setIsAuthenticated(false);
-        localStorage.removeItem('isAuthenticated');
+        localStorage.clear();
     };
 
     return (
@@ -38,6 +39,8 @@ const AuthProvider = ({ children }) => {
 
 const App = () => {
     const [showLoader, setShowLoader] = useState(true);
+
+    
 
     useEffect(() => {
         const timer = setTimeout(() => setShowLoader(false), 2400);
@@ -52,7 +55,7 @@ const App = () => {
                 <Routes>
                     <Route path="/login" element={<LoginRoute />} />
                     <Route path="/reset" element={<Reset />} />
-                    <Route path="/reset/:token" element={<Reset />} />
+                    <Route path="/reset-password/:token" element={<ResetPass />} />  // Pass token
                     <Route path="/*" element={<ProtectedRoute />} />
                 </Routes>
             )}

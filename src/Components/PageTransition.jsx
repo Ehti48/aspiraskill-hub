@@ -11,7 +11,7 @@ const PageTransition = ({ children }) => {
         gsap.fromTo(
             containerRef.current,
             { opacity: 0, },
-            { opacity: 1, duration: 0.6 }
+            { opacity: 1, duration: 0.7 }
         );
     }, [location.pathname]); // Re-run animation on pathname change
 

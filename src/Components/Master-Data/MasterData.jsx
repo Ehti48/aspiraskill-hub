@@ -209,7 +209,7 @@ const Wrapper = styled.section`
     height: 45px;
     padding-left: 10px;
     display: grid;
-    grid-template-columns: 50px 150px 200px 90px 1.5fr 1.2fr 1fr !important;
+    grid-template-columns: 0.5fr 1fr 1.8fr 1fr 1.5fr 1fr 0.8fr!important;
     grid-template-rows: 45px;
     border: 1px solid #cbcbcb;
     border-top: none;
@@ -375,7 +375,6 @@ const Wrapper = styled.section`
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    gap: 10px;
   }
 
   @media (max-width: 960px) {
@@ -412,7 +411,7 @@ function MasterData() {
     if (storedTechStacks && storedTechStacks.length > 0) {
       setAspirants(storedTechStacks);
     } else {
-      setAspirants(initialTechStacks);
+      setAspirants([]);
     }
   }, []);
   const [filteredAspirants, setFilteredAspirants] = useState([]);
@@ -421,19 +420,16 @@ function MasterData() {
   useEffect(() => {
     const fetchAspirants = async () => {
       try {
-        const response = await axios.get(
-          "http://localhost:4000/api/v1/data/getall"
-        );
-        console.log("API Response:", response.data); // ✅ Debug API response
-        const data = response.data.data || []; // ✅ Ensure it's an array
-        // console.log("Formatted Data:", data);
-        setAspirants(data);
-        setFilteredAspirants(data);
+        const response = await axios.get("http://localhost:5000/admin/masterdata/list");
+        const data = response.data || [];
+        // ✅ Format data with status and technology_name
+        const formattedData = data.map(aspirant => formatAspirantData(aspirant));
+        setAspirants(formattedData);
+        setFilteredAspirants(formattedData);
       } catch (error) {
         console.error("Error fetching data:", error);
       }
     };
-
     fetchAspirants();
   }, []);
 
@@ -449,7 +445,7 @@ function MasterData() {
 
     let filtered = aspirants;
 
-    if (filters.name) {
+    if (filters.first_name) {
       filtered = filtered.filter(
         (aspirant) =>
           aspirant.name?.toLowerCase().includes(filters.name.toLowerCase()) // ✅ Safe check
@@ -462,11 +458,8 @@ function MasterData() {
       );
     }
     if (filters.technology) {
-      filtered = filtered.filter(
-        (aspirant) =>
-          aspirant.technology?.toLowerCase() ===
-          filters.technology.toLowerCase()
-      );
+      const techId = languageIdMap[filters.technology];
+      filtered = filtered.filter((aspirant) => aspirant.technology === techId);
     }
     if (filters.status) {
       filtered = filtered.filter(
@@ -478,8 +471,38 @@ function MasterData() {
     setFilteredAspirants(filtered);
   };
 
+  const idToLanguageMap = {
+    1: "React JS",
+    2: "ASP.NET",
+    3: "Python",
+    4: "Java",
+    5: "Angular",
+    6: "Vue JS",
+    7: "Node JS",
+    8: "Django",
+    9: "Ruby on Rails",
+    10: "C#",
+    11: "PHP",
+    12: "Flutter",
+    13: "Swift",
+    14: "Kotlin"
+  };
+
+  const formatAspirantData = (aspirant) => ({
+    ...aspirant,
+    technology_name: idToLanguageMap[aspirant.technology_id] || "Unknown",
+    status: idToStatusMap[aspirant.job_status] || "Unknown",
+  });
+
+  const idToStatusMap = {
+    0: "Terminated",
+    1: "Hired",
+    2: "In Progress",
+    3: "Job Ready",
+  };
+
   const resetFilters = () => {
-    setFilters({ name: "", gender: "", technology: "", status: "" });
+    setFilters({ id: "", name: "", gender: "", technology: "", status: "" });
     setFilteredAspirants(aspirants);
   };
 
@@ -498,10 +521,14 @@ function MasterData() {
     setAspirants(sorted);
   };
 
+  const uniqueAspirants = Array.from(new Set(filteredAspirants.map(a => a.user_id))).map(id => {
+    return filteredAspirants.find(a => a.user_id === id);
+  });
+
   const pages = Math.ceil(filteredAspirants.length / 10);
   const start = (currentPage - 1) * 10;
   const end = start + 10;
-  const paginatedTechStacks = filteredAspirants.slice(start, end);
+  const paginatedTechStacks = uniqueAspirants.slice(start, end);
 
   return (
     <Wrapper>
@@ -516,7 +543,7 @@ function MasterData() {
             </div>
             <div className="status-content">
               <h3>Total Aspirants</h3>
-              <p>{aspirants.length}</p>
+              <p>{filteredAspirants.length}</p>
             </div>
           </div>
           <div className="stat-card hired">
@@ -528,7 +555,7 @@ function MasterData() {
             </div>
             <div className="status-content">
               <h3>Hired</h3>
-              <p>{aspirants.filter((a) => a.status === "Hired").length}</p>
+              <p>{filteredAspirants.filter((a) => a.status === "Hired").length}</p>
             </div>
           </div>
           <div className="stat-card progress">
@@ -540,9 +567,7 @@ function MasterData() {
             </div>
             <div className="status-content">
               <h3>In Progress</h3>
-              <p>
-                {aspirants.filter((a) => a.status === "In Progress").length}
-              </p>
+              <p>{filteredAspirants.filter((a) => a.status === "In Progress").length}</p>
             </div>
           </div>
           <div className="stat-card terminated">
@@ -554,7 +579,7 @@ function MasterData() {
             </div>
             <div className="status-content">
               <h3>Terminated</h3>
-              <p>{aspirants.filter((a) => a.status === "Terminated").length}</p>
+              <p>{filteredAspirants.filter((a) => a.status === "Terminated").length}</p>
             </div>
           </div>
           <div className="stat-card job-ready">
@@ -566,11 +591,10 @@ function MasterData() {
             </div>
             <div className="status-content">
               <h3>Job Ready</h3>
-              <p>{aspirants.filter((a) => a.status === "Job Ready").length}</p>
+              <p>{filteredAspirants.filter((a) => a.status === "Job Ready").length}</p>
             </div>
           </div>
         </header>
-
         <section className="aspirant-data">
           <div className="filters">
             <input
@@ -657,7 +681,7 @@ function MasterData() {
                         : ""
                     }
                   >
-                    Technology ID
+                    Aspira ID
                   </td>
                   <td
                     onClick={() => sortTechStacks("name")}
@@ -669,7 +693,7 @@ function MasterData() {
                         : ""
                     }
                   >
-                    Technology Name
+                    Name
                   </td>
                   <td
                     onClick={() => sortTechStacks("stages")}
@@ -681,7 +705,7 @@ function MasterData() {
                         : ""
                     }
                   >
-                    Stages
+                    Gender
                   </td>
                   <td
                     onClick={() => sortTechStacks("description")}
@@ -693,7 +717,7 @@ function MasterData() {
                         : ""
                     }
                   >
-                    Description
+                    Technology
                   </td>
                   <td
                     onClick={() => sortTechStacks("thumbnail")}
@@ -705,7 +729,7 @@ function MasterData() {
                         : ""
                     }
                   >
-                    Thumbnail
+                    Status
                   </td>
                   <td>Action</td>
                 </tr>
@@ -716,18 +740,34 @@ function MasterData() {
                   paginatedTechStacks.map((aspirant, index) => (
                     <tr className="odd" key={aspirant.id}>
                       <td>{(currentPage - 1) * 10 + index + 1}</td>
-                      <td>{aspirant.id}</td>
-                      <td>{aspirant.name}</td>
+                      <td>{aspirant.aspirant_id}</td>
+                      <td>{aspirant.first_name}</td>
                       <td>{aspirant.gender}</td>
-                      <td>{aspirant.technology}</td>
+                      <td className="cut-text">{aspirant.technology_name}</td>
                       <td
                         className={`status ${aspirant.status?.toLowerCase().replace(" ", "-") || ""
                           }`}
+                        style={{
+                          color:
+                            aspirant.job_status === "1"
+                              ? "green"
+                              : aspirant.job_status === "2"
+                                ? "black"
+                                : "red",
+                        }}
                       >
-                        {aspirant.status || "N/A"}
+                        {formatAspirantData(aspirant).status}
                       </td>
                       <td>
-                        <Link to="/admin/master-data/view" state={{ aspirant }}>
+                        <Link
+                          to="/admin/master-data/view"
+                          state={{
+                            aspirantId: aspirant.aspirant_id,
+                            userId: aspirant.user_id,
+                            techName: aspirant.technology_name,
+                            formattedData: formatAspirantData(aspirant)
+                          }}
+                        >
                           <img
                             src="https://admin.aspiraskillhub.aspirasys.com/images/export-pro.png"
                             alt="View"
@@ -750,36 +790,95 @@ function MasterData() {
               </tbody>
             </table>
           </div>
-          {filteredAspirants.length > 10 && (
+          {paginatedTechStacks.length > 0 && (
             <div className="pagination">
+              {/* Previous Button */}
               <Button
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
-                disabled={currentPage === 1}
+                style={{
+                  padding: '8px 15px',
+                  border: 'none',
+                  borderRadius: '5px',
+                  backgroundColor: '#3282c4',
+                  color: 'white',
+                  cursor: 'pointer',
+                }}
+                disabled={currentPage <= 1}
               >
                 Prev
               </Button>
-              {[...Array(pages)].map((_, i) => (
-                <button
-                  key={i + 1}
-                  onClick={() => setCurrentPage(i + 1)}
-                  style={{
-                    padding: '8px 16px',
-                    border: 'none',
-                    borderRadius: '5px',
-                    backgroundColor: currentPage === i + 1 ? '#3282c4' : 'transparent', // Active color changed
-                    color: currentPage === i + 1 ? 'white' : '#3282c4',
-                    cursor: 'pointer',
-                    margin: '0 5px',
-                    boxShadow: currentPage === i + 1 ? 'none' : 'rgba(0, 0, 0, 0.2) 0px 0px 1px 1px',
-                  }}
-                >
-                  {i + 1}
-                </button>
-              ))}
+
+              {/* First Page Always */}
+              <button
+                onClick={() => setCurrentPage(1)}
+                style={{
+                  padding: '8px 16px',
+                  border: 'none',
+                  borderRadius: '5px',
+                  backgroundColor: currentPage === 1 ? '#3282c4' : 'transparent',
+                  color: currentPage === 1 ? 'white' : '#3282c4',
+                  cursor: 'pointer',
+                  margin: '0 5px',
+                }}
+              >
+                1
+              </button>
+
+              {/* Middle Page Numbers */}
+              {Array.from({ length: 3 }, (_, i) => {
+                const pageNumber = currentPage - 1 + i;
+                if (pageNumber > 1 && pageNumber < pages) {
+                  return (
+                    <button
+                      key={pageNumber}
+                      onClick={() => setCurrentPage(pageNumber)}
+                      style={{
+                        padding: '8px 16px',
+                        border: 'none',
+                        borderRadius: '5px',
+                        backgroundColor: currentPage === pageNumber ? '#3282c4' : 'transparent',
+                        color: currentPage === pageNumber ? 'white' : '#3282c4',
+                        cursor: 'pointer',
+                        margin: '0 5px',
+                      }}
+                    >
+                      {pageNumber}
+                    </button>
+                  );
+                }
+                return null;
+              })}
+
+              {/* Dots before last page if necessary */}
+              {currentPage < pages - 2 && <span style={{ margin: '0 10px' }}>...</span>}
+
+              {/* Last Page Always */}
+              <button
+                onClick={() => setCurrentPage(pages)}
+                style={{
+                  padding: '8px 16px',
+                  border: 'none',
+                  borderRadius: '5px',
+                  backgroundColor: currentPage === pages ? '#3282c4' : 'transparent',
+                  color: currentPage === pages ? 'white' : '#3282c4',
+                  cursor: 'pointer',
+                  margin: '0 5px',
+                }}
+              >
+                {pages}
+              </button>
+
+              {/* Next Button */}
               <Button
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pages))}
-                style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
+                onClick={() => setCurrentPage((prev) => prev + 1)}
+                style={{
+                  padding: '8px 15px',
+                  border: 'none',
+                  borderRadius: '5px',
+                  backgroundColor: '#3282c4',
+                  color: 'white',
+                  cursor: 'pointer',
+                }}
                 disabled={currentPage === pages}
               >
                 Next

@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation, NavLink } from 'react-router-dom';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import axios from 'axios';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
+import { NavLink } from 'react-router-dom';
 import Heading from '../../Components/Heading';
 import EditModal from './EditModal';
 import Button from '../../Components/Button';
+import Loader from '../Loader';
 
 const Wrapper = styled.section`
   .container {
@@ -285,114 +286,243 @@ grid-template-columns: .4fr .8fr 1fr .8fr 1.4fr 1fr 0.8fr !important;    grid-te
     }
 `;
 
+// Image URLs
+const IMAGES = {
+  eye: "https://admin.aspiraskillhub.aspirasys.com/images/eye.png",
+  edit: "https://admin.aspiraskillhub.aspirasys.com/images/edit-2.png",
+  trash: "https://admin.aspiraskillhub.aspirasys.com/images/trash.png",
+  deleteIcon: "https://admin.aspiraskillhub.aspirasys.com/images/mdi_trash.png"
+};
+
+// Loading animation
+const spin = keyframes`
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+`;
+
+const LoadingOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.9);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  transition: opacity 0.3s ease-out;
+`;
+
+const Spinner = styled.div`
+  width: 50px;
+  height: 50px;
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #3498db;
+  border-radius: 50%;
+  animation: ${spin} 1.5s linear infinite;
+`;
+
+const LoadingText = styled.p`
+  margin-top: 20px;
+  font-size: 1.2rem;
+  color: #333;
+  font-weight: 500;
+`;
+
+const ProgressBar = styled.div`
+  width: 200px;
+  height: 8px;
+  background-color: #f3f3f3;
+  border-radius: 4px;
+  margin-top: 15px;
+  overflow: hidden;
+`;
+
+const Progress = styled.div`
+  height: 100%;
+  width: ${props => props.progress}%;
+  background-color: #3498db;
+  transition: width 0.3s ease;
+`;
+
 const MyLearnings = () => {
+  const [state, setState] = useState({
+    techStacks: [],
+    searchQuery: '',
+    currentPage: 1,
+    isModalOpen: false,
+    currentTechStack: null,
+    isDeleteModalOpen: false,
+    techStackToDelete: null,
+    sortConfig: { key: 'timeStamp', direction: 'asc' },
+    isLoading: true,
+    loadProgress: 0
+  });
 
-  const [techStacks, setTechStacks] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [isModalOpen, setModalOpen] = useState(false);
-  const [currentTechStack, setCurrentTechStack] = useState(null);
-  const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [techStackToDelete, setTechStackToDelete] = useState(null);
-  const [sortConfig, setSortConfig] = useState({ key: 'timeStamp', direction: 'asc' });
+  // Memoized filtered tech stacks
+  const filteredTechStacks = useMemo(() => {
+    return state.techStacks.filter(
+      (stack) =>
+        stack.name?.toLowerCase().includes(state.searchQuery.toLowerCase()) ||
+        stack.technolgy_id?.toLowerCase().includes(state.searchQuery.toLowerCase())
+    );
+  }, [state.techStacks, state.searchQuery]);
 
-  useEffect(() => {
-    fetchTechStacks();
-  }, []);
+  // Memoized pagination data
+  const paginationData = useMemo(() => {
+    const pages = Math.ceil(filteredTechStacks.length / 10);
+    const start = (state.currentPage - 1) * 10;
+    const end = start + 10;
+    const paginatedTechStacks = filteredTechStacks.slice(start, end);
 
-  const fetchTechStacks = async () => {
+    return { pages, paginatedTechStacks };
+  }, [filteredTechStacks, state.currentPage]);
+
+  // Fetch tech stacks with extended loader
+  const fetchTechStacks = useCallback(async () => {
+    const MIN_LOADING_TIME = 2000; // Minimum 2 seconds loading time
+    const startTime = Date.now();
+    let progressInterval;
+
     try {
+      // Start progress simulation
+      progressInterval = setInterval(() => {
+        setState(prev => ({
+          ...prev,
+          loadProgress: Math.min(prev.loadProgress + 10, 90) // Stop at 90% until load completes
+        }));
+      }, 300);
+
       const response = await axios.get('http://localhost:3000/admin/technologies');
-      setTechStacks(response.data);
+      const data = response.data || [];
+
+      // Calculate remaining minimum loading time
+      const elapsed = Date.now() - startTime;
+      const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsed);
+
+      setTimeout(() => {
+        clearInterval(progressInterval);
+        setState(prev => ({
+          ...prev,
+          techStacks: data,
+          loadProgress: 100,
+          isLoading: false
+        }));
+      }, remainingTime);
     } catch (error) {
       console.error('Error fetching tech stacks:', error);
-    }
-  };
+      const elapsed = Date.now() - startTime;
+      const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsed);
 
+      setTimeout(() => {
+        clearInterval(progressInterval);
+        setState(prev => ({
+          ...prev,
+          loadProgress: 100,
+          isLoading: false
+        }));
+      }, remainingTime);
+    }
+  }, []);
+
+  useEffect(() => {
+    setState(prev => ({
+      ...prev,
+      isLoading: true,
+      loadProgress: 0
+    }));
+    fetchTechStacks();
+  }, [fetchTechStacks]);
+
+  // Local storage effects
   useEffect(() => {
     const storedTechStacks = JSON.parse(localStorage.getItem('techStacks'));
     if (storedTechStacks && storedTechStacks.length > 0) {
-      setTechStacks(storedTechStacks);
-    } else {
-      setTechStacks([]);
+      setState(prev => ({ ...prev, techStacks: storedTechStacks }));
     }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('techStacks', JSON.stringify(techStacks));
-  }, [techStacks]);
+    localStorage.setItem('techStacks', JSON.stringify(state.techStacks));
+  }, [state.techStacks]);
 
-  const handleSearchChange = (e) => setSearchQuery(e.target.value);
+  // Event handlers
+  const handleSearchChange = useCallback((e) => {
+    setState(prev => ({ ...prev, searchQuery: e.target.value, currentPage: 1 }));
+  }, []);
 
-  const handleSaveTechStack = async (newTechStack) => {
+  const handleSaveTechStack = useCallback(async (newTechStack) => {
     try {
       const response = newTechStack.id
         ? await axios.put(`http://localhost:3000/admin/technologies/update/${newTechStack.id}`, newTechStack)
         : await axios.post('http://localhost:3000/admin/technologies/create', newTechStack);
 
-      setTechStacks((prev) => {
-        const exists = prev.some((stack) => stack.id === response.data.id);
-        return exists
-          ? prev.map((stack) => (stack.id === response.data.id ? response.data : stack))
-          : [...prev, response.data];
+      setState(prev => {
+        const exists = prev.techStacks.some(stack => stack.id === response.data.id);
+        const updatedTechStacks = exists
+          ? prev.techStacks.map(stack => (stack.id === response.data.id ? response.data : stack))
+          : [...prev.techStacks, response.data];
+
+        return {
+          ...prev,
+          techStacks: updatedTechStacks,
+          isModalOpen: false,
+          currentTechStack: null
+        };
       });
-      fetchTechStacks();
-      setModalOpen(false);
-      setCurrentTechStack();
     } catch (error) {
       console.error('Error saving tech stack:', error);
       if (error.response) {
         console.error('Server response:', error.response.data);
       }
     }
-  };
-  const handleDeleteTechStack = async () => {
+  }, []);
+
+  const handleDeleteTechStack = useCallback(async () => {
     try {
-      await axios.delete(`http://localhost:3000/admin/technologies/delete/${techStackToDelete.id}`);
-      setTechStacks((prev) => prev.filter((stack) => stack.id !== techStackToDelete.id));
-      setDeleteModalOpen(false);
-      setTechStackToDelete(null);
+      await axios.delete(`http://localhost:3000/admin/technologies/delete/${state.techStackToDelete.id}`);
+      setState(prev => ({
+        ...prev,
+        techStacks: prev.techStacks.filter(stack => stack.id !== prev.techStackToDelete.id),
+        isDeleteModalOpen: false,
+        techStackToDelete: null
+      }));
     } catch (error) {
       console.error('Error deleting tech stack:', error);
     }
-  };
+  }, [state.techStackToDelete]);
 
-  const filteredTechStacks = techStacks.filter(
-    (stack) =>
-      stack.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      stack.technolgy_id?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const pages = Math.ceil(filteredTechStacks.length / 10);
-  const start = (currentPage - 1) * 10;
-  const end = start + 10;
-  const paginatedTechStacks = filteredTechStacks.slice(start, end);
-
-  const sortTechStacks = (key) => {
+  const sortTechStacks = useCallback((key) => {
     let direction = 'asc';
-    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+    if (state.sortConfig.key === key && state.sortConfig.direction === 'asc') {
       direction = 'desc';
     }
-    setSortConfig({ key, direction });
 
-    const sorted = [...techStacks].sort((a, b) => {
+    const sorted = [...state.techStacks].sort((a, b) => {
       if (a[key] < b[key]) return direction === 'asc' ? 1 : -1;
       if (a[key] > b[key]) return direction === 'asc' ? -1 : 1;
       return 0;
     });
-    setTechStacks(sorted);
-  };
 
-  const ConfirmationModal = ({ onConfirm, onCancel }) => (
+    setState(prev => ({
+      ...prev,
+      techStacks: sorted,
+      sortConfig: { key, direction }
+    }));
+  }, [state.techStacks, state.sortConfig]);
+
+  const ConfirmationModal = useCallback(({ onConfirm, onCancel }) => (
     <div className='modalOverlay'>
       <div className='modalContent'>
         <div className="close-icon" onClick={onCancel}>✖</div>
         <div className="del-icon">
-          <img src="https://admin.aspiraskillhub.aspirasys.com/images/mdi_trash.png" alt="delete" />
+          <img src={IMAGES.deleteIcon} alt="delete" />
         </div>
         <p className='message'>Are you sure?</p>
         <span className='subMessage'>
-          you want to delete <span>{techStackToDelete?.name}</span>
+          you want to delete <span>{state.techStackToDelete?.name}</span>
         </span>
         <div className="btn-cont">
           <button onClick={onCancel} className='btn cancel'>No</button>
@@ -400,173 +530,195 @@ const MyLearnings = () => {
         </div>
       </div>
     </div>
-  );
+  ), [state.techStackToDelete]);
 
   return (
-    <Wrapper>
-      <div className="container">
-        <div className="header">
-          <Heading title="Tech Stack" />
-          <Button className="addBtn" onClick={() => setModalOpen(true)}>
-            + Add Tech Stack
-          </ Button>
-        </div>
-        <div className="searchBox">
-          <input
-            type="text"
-            placeholder="Search"
-            value={searchQuery}
-            onChange={handleSearchChange}
-          />
-        </div>
-        <div className="tab">
-          <table className="tab-cols">
-            <thead>
-              <tr className="odd odd1">
-                <td>#</td>
-                <td
-                  onClick={() => sortTechStacks('id')}
-                  className={sortConfig.key === 'id' ? (sortConfig.direction === 'asc' ? 'new' : 'old') : ''}
-                >
-                  Technology ID
-                </td>
-                <td
-                  onClick={() => sortTechStacks('name')}
-                  className={sortConfig.key === 'name' ? (sortConfig.direction === 'asc' ? 'new' : 'old') : ''}
-                >
-                  Technology Name
-                </td>
-                <td
-                  onClick={() => sortTechStacks('stages')}
-                  className={sortConfig.key === 'stages' ? (sortConfig.direction === 'asc' ? 'new' : 'old') : ''}
-                >
-                  Stages
-                </td>
-                <td
-                  onClick={() => sortTechStacks('description')}
-                  className={sortConfig.key === 'description' ? (sortConfig.direction === 'asc' ? 'new' : 'old') : ''}
-                >
-                  Description
-                </td>
-                <td
-                  onClick={() => sortTechStacks('thumbnail')}
-                  className={sortConfig.key === 'thumbnail' ? (sortConfig.direction === 'asc' ? 'new' : 'old') : ''}
-                >
-                  Thumbnail
-                </td>
-                <td>Action</td>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredTechStacks.length > 0 ? (
-                paginatedTechStacks.map((techStack, index) => (
-                  <tr className="odd" key={techStack.id}>
-                    <td>{(currentPage - 1) * 10 + index + 1}</td>
-                    <td>{techStack.technolgy_id}</td>
-                    <td className='cut-text'>{techStack.name}</td>
-                    <td>{techStack.no_stages}</td>
-                    <td className='cut-text'>{techStack.description || '-'}</td>
-                    <td>
-                      {techStack.image ? (
-                        <img className='thumb' src={techStack.image} alt={techStack.name} width="50" height="50" />
-                      ) : (
-                        '-'
-                      )}
-                    </td>
-                    <td className="stack-output">
-                      <NavLink
-                        to={`/admin/my-learnings/detail/${techStack.technolgy_id.slice(-2)}`}
-                        state={{ techStackName: techStack.name, techStackId: techStack.id, techStackStages: techStack.stages }}
-                      >
-                        <button>
-                          <img src="https://admin.aspiraskillhub.aspirasys.com/images/eye.png" />
-                        </button>
-                      </NavLink>
-                      <button
-                        onClick={() => {
-                          setCurrentTechStack(techStack);
-                          setModalOpen(true);
-                        }}
-                      >
-                        <img src="https://admin.aspiraskillhub.aspirasys.com/images/edit-2.png" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setTechStackToDelete(techStack);
-                          setDeleteModalOpen(true);
-                        }}
-                      >
-                        <img src="https://admin.aspiraskillhub.aspirasys.com/images/trash.png" />
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr className="odd odd2">
-                  <td colSpan="7" style={{ textAlign: 'center' }}>
-                    No data available in the table
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-        {techStacks.length > 10 && (
-          <div className="pagination">
+    <>
+      {state.isLoading && (
+        <LoadingOverlay>
+          <Spinner />
+          <LoadingText>Loading Tech Stacks...</LoadingText>
+          <ProgressBar>
+            <Progress progress={state.loadProgress} />
+          </ProgressBar>
+        </LoadingOverlay>
+      )}
+
+      <Wrapper>
+        <div className="container">
+          <div className="header">
+            <Heading title="Tech Stack" />
             <Button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
-              disabled={currentPage === 1}
+              className="addBtn"
+              onClick={() => setState(prev => ({ ...prev, isModalOpen: true }))}
             >
-              Prev
-            </Button>
-            {[...Array(pages)].map((_, i) => (
-              <button
-                key={i + 1}
-                onClick={() => setCurrentPage(i + 1)}
-                style={{
-                  padding: '8px 16px',
-                  border: 'none',
-                  borderRadius: '5px',
-                  backgroundColor: currentPage === i + 1 ? '#3282c4' : 'transparent', // Active color changed
-                  color: currentPage === i + 1 ? 'white' : '#3282c4',
-                  cursor: 'pointer',
-                  margin: '0 5px',
-                  boxShadow: currentPage === i + 1 ? 'none' : 'rgba(0, 0, 0, 0.2) 0px 0px 1px 1px',
-                }}
-              >
-                {i + 1}
-              </button>
-            ))}
-            <Button
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pages))}
-              style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
-              disabled={currentPage === pages}
-            >
-              Next
+              + Add Tech Stack
             </Button>
           </div>
-        )}
-        {isModalOpen && (
-          <EditModal
-            isOpen={isModalOpen}
-            onClose={() => {
-              setModalOpen(false);
-              setCurrentTechStack(null);
-            }}
-            techStack={currentTechStack}
-            onSave={handleSaveTechStack} // Pass the correct function
-            existingIds={techStacks.map((stack) => stack.technolgy_id)}
-          />
-        )}
-        {isDeleteModalOpen && (
-          <ConfirmationModal
-            onConfirm={handleDeleteTechStack}
-            onCancel={() => setDeleteModalOpen(false)}
-          />
-        )}
-      </div>
-    </Wrapper>
+          <div className="searchBox">
+            <input
+              type="text"
+              placeholder="Search"
+              value={state.searchQuery}
+              onChange={handleSearchChange}
+            />
+          </div>
+          <div className="tab">
+            <table className="tab-cols">
+              <thead>
+                <tr className="odd odd1">
+                  <td>#</td>
+                  <td
+                    onClick={() => sortTechStacks('id')}
+                    className={state.sortConfig.key === 'id' ? (state.sortConfig.direction === 'asc' ? 'new' : 'old') : ''}
+                  >
+                    Technology ID
+                  </td>
+                  <td
+                    onClick={() => sortTechStacks('name')}
+                    className={state.sortConfig.key === 'name' ? (state.sortConfig.direction === 'asc' ? 'new' : 'old') : ''}
+                  >
+                    Technology Name
+                  </td>
+                  <td
+                    onClick={() => sortTechStacks('stages')}
+                    className={state.sortConfig.key === 'stages' ? (state.sortConfig.direction === 'asc' ? 'new' : 'old') : ''}
+                  >
+                    Stages
+                  </td>
+                  <td
+                    onClick={() => sortTechStacks('description')}
+                    className={state.sortConfig.key === 'description' ? (state.sortConfig.direction === 'asc' ? 'new' : 'old') : ''}
+                  >
+                    Description
+                  </td>
+                  <td
+                    onClick={() => sortTechStacks('thumbnail')}
+                    className={state.sortConfig.key === 'thumbnail' ? (state.sortConfig.direction === 'asc' ? 'new' : 'old') : ''}
+                  >
+                    Thumbnail
+                  </td>
+                  <td>Action</td>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTechStacks.length > 0 ? (
+                  paginationData.paginatedTechStacks.map((techStack, index) => (
+                    <tr className="odd" key={techStack.id}>
+                      <td>{(state.currentPage - 1) * 10 + index + 1}</td>
+                      <td>{techStack.technolgy_id}</td>
+                      <td className='cut-text'>{techStack.name}</td>
+                      <td>{techStack.no_stages}</td>
+                      <td className='cut-text'>{techStack.description || '-'}</td>
+                      <td>
+                        {techStack.image ? (
+                          <img className='thumb' src={techStack.image} alt={techStack.name} width="50" height="50" />
+                        ) : (
+                          '-'
+                        )}
+                      </td>
+                      <td className="stack-output">
+                        <NavLink
+                          to={`/admin/my-learnings/detail/${techStack.technolgy_id.slice(-2)}`}
+                          state={{
+                            techStackName: techStack.name,
+                            techStackId: techStack.id,
+                            techStackStages: techStack.stages
+                          }}
+                        >
+                          <button>
+                            <img src={IMAGES.eye} alt="View" />
+                          </button>
+                        </NavLink>
+                        <button
+                          onClick={() => {
+                            setState(prev => ({
+                              ...prev,
+                              currentTechStack: techStack,
+                              isModalOpen: true
+                            }));
+                          }}
+                        >
+                          <img src={IMAGES.edit} alt="Edit" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setState(prev => ({
+                              ...prev,
+                              techStackToDelete: techStack,
+                              isDeleteModalOpen: true
+                            }));
+                          }}
+                        >
+                          <img src={IMAGES.trash} alt="Delete" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr className="odd odd2">
+                    <td colSpan="7" style={{ textAlign: 'center' }}>
+                      {state.searchQuery ? "No matching tech stacks found" : "No data available in the table"}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          {state.techStacks.length > 10 && (
+            <div className="pagination">
+              <Button
+                onClick={() => setState(prev => ({ ...prev, currentPage: Math.max(prev.currentPage - 1, 1) }))}
+                style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
+                disabled={state.currentPage === 1}
+              >
+                Prev
+              </Button>
+              {[...Array(paginationData.pages)].map((_, i) => (
+                <button
+                  key={i + 1}
+                  onClick={() => setState(prev => ({ ...prev, currentPage: i + 1 }))}
+                  style={{
+                    padding: '8px 16px',
+                    border: 'none',
+                    borderRadius: '5px',
+                    backgroundColor: state.currentPage === i + 1 ? '#3282c4' : 'transparent',
+                    color: state.currentPage === i + 1 ? 'white' : '#3282c4',
+                    cursor: 'pointer',
+                    margin: '0 5px',
+                    boxShadow: state.currentPage === i + 1 ? 'none' : 'rgba(0, 0, 0, 0.2) 0px 0px 1px 1px',
+                  }}
+                >
+                  {i + 1}
+                </button>
+              ))}
+              <Button
+                onClick={() => setState(prev => ({ ...prev, currentPage: Math.min(prev.currentPage + 1, paginationData.pages) }))}
+                style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
+                disabled={state.currentPage === paginationData.pages}
+              >
+                Next
+              </Button>
+            </div>
+          )}
+          {state.isModalOpen && (
+            <EditModal
+              isOpen={state.isModalOpen}
+              onClose={() => setState(prev => ({ ...prev, isModalOpen: false, currentTechStack: null }))}
+              techStack={state.currentTechStack}
+              onSave={handleSaveTechStack}
+              existingIds={state.techStacks.map(stack => stack.technolgy_id)}
+            />
+          )}
+          {state.isDeleteModalOpen && (
+            <ConfirmationModal
+              onConfirm={handleDeleteTechStack}
+              onCancel={() => setState(prev => ({ ...prev, isDeleteModalOpen: false }))}
+            />
+          )}
+        </div>
+      </Wrapper>
+    </>
   );
 };
 

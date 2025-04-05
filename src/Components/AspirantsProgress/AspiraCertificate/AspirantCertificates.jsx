@@ -4,6 +4,7 @@ import Heading from '../../Heading';
 import { MdKeyboardArrowRight } from "react-icons/md";
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import Button from '../../Button';
+import { GrTechnology } from 'react-icons/gr';
 
 const Wrapper = styled.section`
   .dateSec {
@@ -273,7 +274,6 @@ const Wrapper = styled.section`
   border-radius: 8px;
   width: 90%;
   max-width: 700px;
-  height: 500px;
   position: relative;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   display: flex;
@@ -300,11 +300,11 @@ const Wrapper = styled.section`
 .form-group {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
 
   .input-cont {
     width: 50%;
     padding: 10px;
+    flex-grow: 1;
 
     label {
       display: block;
@@ -416,141 +416,278 @@ const Wrapper = styled.section`
     }
   }
 
+  .delete-modal {
+    max-width: 400px;
+
+    .del-icon {
+      width: 70px;
+      height: 70px;
+      background: #ff6b63;
+      border-radius: 50%;
+      padding: 17px;
+      margin: 10px auto;
+    }
+
+    p {
+      text-align: center;
+      font-size: 16px;
+
+      span {
+        font-size: 14px;  
+      }
+    }
+
+    .modal-actions {
+      margin-bottom: 0;
+      justify-content: center;
+
+      button {
+        width: 50%;  
+      }
+    }
+  }
+
+  @media screen and (max-width: 600px) {
+    .form-group {
+      gap: 10px;
+    }
+  }
   `;
 
 const AspirantCertificates = () => {
-  const [studentsCertify, setStudentsCertify] = useState([]);
+  const location = useLocation();
+  const studentId = location.state?.studentId;
+  const studentName = location.state?.studentName;
+  const aspirantId = location.state?.aspirantId;
+
+  const [certificates, setCertificates] = useState([]);
+  const [formData, setFormData] = useState({
+    name: "",
+    link: "",
+    image: null,
+    credential_id: "",
+    course: "",
+    issue_date: "",
+
+
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState(null);
-  const [formData, setFormData] = useState({
-    cName: "",
-    cId: "",
-    cLink: "",
-    issues: "",
-    image: null,
-  });
+  const [selectedCertificate, setSelectedCertificate] = useState(null);
+  const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
+
+  // Save the original credential id for update operations
+  const [originalCredentialId, setOriginalCredentialId] = useState("");
+
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+  };
 
 
-  // Load students from localStorage on component mount
+  // Fetch certificates on component mount or when studentId changes
   useEffect(() => {
-    const storedStudents = localStorage.getItem("studentsCertify");
-    if (storedStudents) {
-      setStudentsCertify(JSON.parse(storedStudents));
-    }
-  }, []);
+    const fetchCertificates = async () => {
+      try {
+        const response = await fetch(
+          `http://localhost:3000/admin/aspirants-certificates/view/${studentId}`
+        );
+        if (!response.ok) throw new Error("Error fetching certificates");
+        const data = await response.json();
+        setCertificates(data);
+      } catch (error) {
+        console.error("Error fetching certificates:", error);
+      }
+    };
+    fetchCertificates();
+  }, [studentId]);
 
-  // Save students to localStorage whenever they are updated
-  useEffect(() => {
-    localStorage.setItem("studentsCertify", JSON.stringify(studentsCertify));
-  }, [studentsCertify]);
-
-  const handleSearchChange = (e) => setSearchQuery(e.target.value);
-
-  const filteredStudents = studentsCertify.filter((student) => {
-    const name = student.cName || ""; // Default to an empty string if undefined
-    const issue = student.issues || ""; // Default to an empty string if undefined
-    return (
-      name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      issue.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  });
-
-  const openModal = (student = null) => {
-    if (student) {
+  // Open modal for Add or Edit
+  const openModal = (certificate = null) => {
+    if (certificate) {
       setEditMode(true);
-      setSelectedStudent(student);
-      setFormData({
-        cName: student.cName,
-        cId: student.cId,
-        cLink: student.cLink,
-        issues: student.issues,
-      });
+      setSelectedCertificate(certificate);
+      setOriginalCredentialId(certificate.credential_id); // Ensure this is set
+      setFormData({ ...certificate });
     } else {
       setEditMode(false);
-      setFormData({ cName: "", cId: "", cLink: "", issues: "" });
+      setSelectedCertificate(null);
+      setOriginalCredentialId("");
+      setFormData({
+        name: "",
+        link: "",
+        image: null,
+        credential_id: "",
+        course: "",
+        issue_date: "",
+      });
     }
     setIsModalOpen(true);
-    document.openModal.style.transition = "all 0.3s ease-in-out";
   };
 
-  const closeModal = () => setIsModalOpen(false);
-  const closeDeleteConfirmation = () => setIsDeleteConfirmationOpen(false);
 
+
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditMode(false);
+    setSelectedCertificate(null);
+    setOriginalCredentialId("");
+  };
+
+  // Handle input value changes in the form
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prevState) => ({
-      ...prevState,
-      [name]: value,
-    }));
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = () => {
-    if (editMode && selectedStudent) {
-      setStudentsCertify(
-        studentsCertify.map((student) =>
-          student.cId === selectedStudent.cId ? { ...formData } : student
-        )
-      );
-    } else {
-      setStudentsCertify([...studentsCertify, formData]);
-    }
-    closeModal();
-  };  
-
-  const handleDelete = (studentId) => {
-    setIsDeleteConfirmationOpen(true);
-    setSelectedStudent(studentsCertify.find((student) => student.cId === studentId));
-  };
-
-  const confirmDelete = () => {
-    setStudentsCertify(studentsCertify.filter((student) => student.cId !== selectedStudent.cId));
-    closeDeleteConfirmation();
-  };
-
+  // Handle image file selection
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = () => {
-        setFormData((prevState) => ({
-          ...prevState,
-          image: reader.result, // Store base64-encoded image
-        }));
+        setFormData({ ...formData, image: reader.result });
       };
-      reader.readAsDataURL(file); // Convert file to base64
+      reader.readAsDataURL(file);
     }
   };
 
+  const formatDate = (date) => {
+    const d = new Date(date);
+    return d.toISOString().split("T")[0]; // Ensures YYYY-MM-DD format
+  };
 
-  const location = useLocation();
-  const studentId = location.state?.studentId;
-  const studentName = location.state?.studentName;
+
+
+  const handleAddOrUpdate = async () => {
+    try {
+      const url = editMode
+        ? `http://localhost:3000/admin/aspirants-certificates/update/${selectedCertificate.id}`
+        : "http://localhost:3000/admin/aspirants-certificates/create";
+      const method = editMode ? "PUT" : "POST";
   
+      // Ensure all required fields are included and formatted correctly
+      const requestData = {
+        ...formData,
+        name: formData.name,
+        link: formData.link,
+        image: formData.image || null, // Set null if empty
+        credential_id: Number(formData.credential_id), // Ensure it's a number
+        course: formData.course,
+        issue_date: formData.issue_date ? formatDate(formData.issue_date) : null, // Format issue_date
+        user_id: studentId, // Ensure user_id is included
+        technology_id: formData.technology_id || 1, // Default value if missing
+      };
+  
+      console.log("Sending request to:", url);
+      console.log("Request Data:", requestData);
+      console.log("originalCredentialId:", originalCredentialId);
+  
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestData),
+      });
+      
+      const responseData = await response.json();
+      console.log("Response:", responseData);      
+  
+      if (!response.ok) {
+        throw new Error(responseData.message || "Error saving certificate");
+      }
+  
+      // Fetch updated certificates
+      const updatedCertificates = await fetch(
+        `http://localhost:3000/admin/aspirants-certificates/view/${studentId}`
+      ).then((res) => res.json());
+      
+      setCertificates(updatedCertificates);      
+  
+    } catch (error) {
+      console.error("Error saving certificate:", error.message);
+    } finally {
+      closeModal(); // Close the modal properly
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedCertificate) return;
+  
+    try {
+      const response = await fetch(
+        `http://localhost:3000/admin/aspirants-certificates/delete/${selectedCertificate.id}`, 
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+  
+      if (response.ok) {
+        // Remove the certificate from the frontend state
+        setCertificates((prev) =>
+          prev.filter((cert) => cert.id !== selectedCertificate.id)
+        );
+        closeDeleteConfirmation();
+      } else {
+        console.error("Failed to delete the certificate");
+      }
+    } catch (error) {
+      console.error("Error deleting the certificate:", error);
+    }
+  };
+  
+
+
+
+  const openDeleteConfirmation = (certificate) => {
+    setSelectedCertificate(certificate);
+    setIsDeleteConfirmationOpen(true);
+  };
+
+  const closeDeleteConfirmation = () => {
+    setIsDeleteConfirmationOpen(false);
+    setSelectedCertificate(null);
+  };
+
+  // Filter certificates based on search query
+  const filteredCertificates = certificates.filter((certificate) => {
+    const name = certificate.name?.toLowerCase() || "";
+    const credId =
+      certificate.credential_id?.toString().toLowerCase() || "";
+    return (
+      name.includes(searchQuery.toLowerCase()) ||
+      credId.includes(searchQuery.toLowerCase())
+    );
+  });
+
   return (
     <Wrapper>
       <div className="user-timesheet">
         <nav aria-label="breadcrumb">
           <ol className="breadcrumb ad-sck">
             <li className="breadcrumb-item">
-              <Link to={{ pathname: "/admin/aspirants-progress", search: "?page=certificates" }}>Certificates</Link>
+              <Link to="/admin/aspirants-progress?page=certificates">
+                Certificates
+              </Link>
             </li>
             <MdKeyboardArrowRight />
             <li className="breadcrumb-item active" aria-current="page">
-              {studentId}
+              {aspirantId}
             </li>
           </ol>
         </nav>
         <div className="usertime-id">
-          <p className="usertime-name">Aspirant : {studentId} - {studentName}</p>
+          <p className="usertime-name">
+            Aspirant : {aspirantId} - {studentName}
+          </p>
         </div>
       </div>
       <div className="dateSec">
         <div className="header">
           <Heading title="Certificates" />
-          <Button onClick={() => openModal()}>+ Add Certificates</Button>
+          <Button onClick={() => openModal()}>+ Add Certificate</Button>
         </div>
         <div className="list-cont">
           <div className="container-2">
@@ -577,20 +714,32 @@ const AspirantCertificates = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredStudents.length > 0 ? (
-                    filteredStudents.map((student, index) => (
+                  {filteredCertificates.length > 0 ? (
+                    filteredCertificates.map((certificate, index) => (
                       <tr className="odd" key={index}>
                         <td className="num">{index + 1}</td>
-                        <td>{student.cName}</td>
-                        <td>{student.cId}</td>
-                        <td>{student.cLink}</td>
-                        <td>{student.issues}</td>
+                        <td>{certificate.name}</td>
+                        <td>{certificate.credential_id}</td>
+                        <td className='cut-text'>{certificate.link}</td>
+                        <td>
+                          {new Date(certificate.issue_date).toLocaleDateString()}
+                        </td>
                         <td className="stack-output">
-                          <button onClick={() => openModal(student)}>
-                            <img src="https://admin.aspiraskillhub.aspirasys.com/images/edit-2.png" />
+                          <button onClick={() => openModal(certificate)}>
+                            <img
+                              src="https://admin.aspiraskillhub.aspirasys.com/images/edit-2.png"
+                              alt="Edit"
+                            />
                           </button>
-                          <button onClick={() => handleDelete(student.cId)}>
-                            <img src="https://admin.aspiraskillhub.aspirasys.com/images/trash.png" />
+                          <button
+                            onClick={() =>
+                              openDeleteConfirmation(certificate)
+                            }
+                          >
+                            <img
+                              src="https://admin.aspiraskillhub.aspirasys.com/images/trash.png"
+                              alt="Delete"
+                            />
                           </button>
                         </td>
                       </tr>
@@ -607,75 +756,93 @@ const AspirantCertificates = () => {
         </div>
       </div>
 
-      {/* Add/Edit Modal */}
       {isModalOpen && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <Heading title={editMode ? "Edit Certificate" : "Certificate"} />
-            <button className='cancelBtn' onClick={() => setIsModalOpen(false)}>✖</button>
+            <h3>{editMode ? "Edit Certificate" : "Add Certificate"}</h3>
+            <button className="cancelBtn" onClick={closeModal}>
+              ✖
+            </button>
+
             <div className="form-group">
               <div className="input-cont">
-                <label htmlFor="cName">Certificate Name</label>
+                <label htmlFor="name">Certificate Name</label>
                 <input
                   type="text"
-                  name="cName"
-                  value={formData.cName}
+                  name="name"
+                  value={formData.name}
                   onChange={handleChange}
                   placeholder="Enter certificate name"
                 />
 
-                <label htmlFor="cLink">Certificate Link</label>
+                <label htmlFor="link">Certificate Link</label>
                 <input
                   type="text"
-                  name="cLink"
-                  value={formData.cLink}
+                  name="link"
+                  value={formData.link}
                   onChange={handleChange}
                   placeholder="Enter link"
                 />
 
-                <div class="upload-img">
+                <div className="upload-img">
                   <label htmlFor="image">Upload Image</label>
-                  <input type="file" name="image" accept="image/*" className='addImage' onChange={handleImageChange} />
-                  {formData.image && <img src={formData.image} alt="Preview" className="preview-image" />}
-                  <div class="upload-content tech-old-addImage">
-                    <div class="edit-photo">
-                      <img src="https://admin.aspiraskillhub.aspirasys.com/images/profile-upload.png" alt="profile" />
-                    </div>
-                    <p class="font-16 fw_500"> Upload image</p>
-                  </div>
-                  <input type="file" name="image" class="input d-none addImage" id="addImage" required="" />
-                  <div class="invalid-feedback teck_image py-2"></div>
+                  <input
+                    type="file"
+                    name="image"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                  />
+                  {formData.image && (
+                    <img
+                      src={formData.image}
+                      alt="Preview"
+                      className="preview-image"
+                    />
+                  )}
                 </div>
               </div>
+
               <div className="input-cont">
-                <label htmlFor="cId">Credential ID</label>
+                <label htmlFor="credential_id">Credential ID</label>
                 <input
                   type="text"
-                  name="cId"
-                  value={formData.cId || 20258}
+                  name="credential_id"
+                  value={formData.credential_id}
                   onChange={handleChange}
+                  disabled={editMode} // prevent editing credential_id during update
                 />
-                <label htmlFor="Course">Select course</label>
-                <select name="Course" id="Course">
-                  <option value="Select course">Select course</option>
-                  <option value="Basic Web Technology">Basic Web Technology</option>
+
+                <label htmlFor="Course">Select Course</label>
+                <select
+                  name="course"
+                  id="Course"
+                  value={formData.course}
+                  onChange={handleChange}
+                >
+                  <option value="">Select course</option>
+                  <option value="Basic Web Technology">
+                    Basic Web Technology
+                  </option>
                   <option value="React JS">React JS</option>
                   <option value="Flutter">Flutter</option>
                   <option value="ASP DotNet">ASP DotNet</option>
                 </select>
-                <label htmlFor="issues">Issues on</label>
+
+                <label htmlFor="Issue Date">Issue Date</label>
                 <input
                   type="date"
-                  name="issues"
-                  value={formData.issues}
-                  onChange={handleChange}
-                  placeholder=""
+                  name="issue_date"
+                  value={formData.issue_date ? formatDate(formData.issue_date) : ""} // Ensures correct format
+                  onChange={(e) =>
+                    setFormData({ ...formData, issue_date: e.target.value })
+                  }
                 />
               </div>
             </div>
+
             <div className="modal-actions">
               <button onClick={closeModal}>Cancel</button>
-              <button onClick={handleSubmit}>
+              <button onClick={handleAddOrUpdate}>
                 {editMode ? "Update" : "Add"}
               </button>
             </div>
@@ -683,18 +850,31 @@ const AspirantCertificates = () => {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
       {isDeleteConfirmationOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h3>Are you sure you want to delete this certificate?</h3>
+        <div
+          className="modal-overlay"
+          role="dialog"
+          aria-hidden={!isDeleteConfirmationOpen}
+          onClick={closeDeleteConfirmation} // Closes modal when clicking outside
+        >
+          <div
+            className="modal-content delete-modal"
+            onClick={(e) => e.stopPropagation()} // Prevents closing when clicking inside
+          >
+            <div className="del-icon">
+              <img src="https://admin.aspiraskillhub.aspirasys.com/images/mdi_trash.png" alt="delete" />
+            </div>
+            <p>Are you sure?<br />
+              <span>you want to delete this certificate</span>
+            </p>
             <div className="modal-actions">
               <button onClick={closeDeleteConfirmation}>Cancel</button>
-              <button onClick={confirmDelete}>Confirm</button>
+              <button onClick={handleDelete}>Delete</button>
             </div>
           </div>
         </div>
       )}
+
     </Wrapper>
   );
 };

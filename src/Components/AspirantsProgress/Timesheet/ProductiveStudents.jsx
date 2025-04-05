@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import Heading from '../../../Components/Heading';
-import { MdKeyboardArrowRight } from "react-icons/md";
+import { MdKeyboardArrowRight } from 'react-icons/md';
 import axios from 'axios';
+import styled, { keyframes } from 'styled-components';
+import Heading from '../../../Components/Heading';
 
 const Wrapper = styled.section`
 .main-bg {
@@ -288,32 +288,67 @@ const Wrapper = styled.section`
 }
 `;
 
+// Loading animation
+const spin = keyframes`
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+`;
+
+const LoadingOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.9);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  transition: opacity 0.3s ease-out;
+`;
+
+const Spinner = styled.div`
+  width: 50px;
+  height: 50px;
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #3498db;
+  border-radius: 50%;
+  animation: ${spin} 1.5s linear infinite;
+`;
+
+const LoadingText = styled.p`
+  margin-top: 20px;
+  font-size: 1.2rem;
+  color: #333;
+  font-weight: 500;
+`;
+
+const ProgressBar = styled.div`
+  width: 200px;
+  height: 8px;
+  background-color: #f3f3f3;
+  border-radius: 4px;
+  margin-top: 15px;
+  overflow: hidden;
+`;
+
+const Progress = styled.div`
+  height: 100%;
+  width: ${props => props.progress}%;
+  background-color: #3498db;
+  transition: width 0.3s ease;
+`;
+
 const ProductiveStudents = () => {
     const location = useLocation();
     const studentId = location.state?.studentId;
     const studentName = location.state?.studentName;
 
     const [activeStage, setActiveStage] = useState(null);
-
-    useEffect(() => {
-        const fetchActiveStage = async () => {
-            try {
-                const response = await axios.get(`http://localhost:48857/api/admin/timesheet/1/productive-rate`);
-                console.log('API Response:', response.data);
-                setActiveStage(response.data);
-            } catch (error) {
-                console.error('Error fetching active stage:', error);
-            }
-        };
-
-        fetchActiveStage();
-    }, []);
-
-    useEffect(() => {
-        if (activeStage) {
-            console.log('Active Stage:', activeStage.productivity);
-        }
-    }, [activeStage]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [loadProgress, setLoadProgress] = useState(0);
 
     const stages = [
         {
@@ -346,106 +381,172 @@ const ProductiveStudents = () => {
         },
     ];
 
-    return (
-        <Wrapper>
-            <div className="main-bg learning-section" id="mainContent">
-                <div className="row">
-                    <div className="user-timesheet">
-                        <nav aria-label="breadcrumb">
-                            <ol className="breadcrumb ad-sck">
-                                <li className="breadcrumb-item">
-                                    <Link to="/admin/aspirants-progress">Timesheet</Link>
-                                </li>
-                                <MdKeyboardArrowRight />
-                                <li className="breadcrumb-item active" aria-current="page">
-                                    {studentId}
-                                </li>
-                            </ol>
-                        </nav>
-                        <div className="usertime-id">
-                            <p className="usertime-name">Aspirant : {studentId} - {studentName}</p>
-                        </div>
-                    </div>
-                    <div className="ProductiveRate green mb-4">
-                        <p>Your dedication is truly inspiring.</p>
-                    </div>
+    const fetchActiveStage = useCallback(async () => {
+        const MIN_LOADING_TIME = 1500; // Minimum 1.5 seconds loading time
+        const startTime = Date.now();
+        let progressInterval;
 
-                    <div className="journey-timeline">
-                        <h6 className="font-20 fw_500">Journey Timeline</h6>
-                        <div className="timesheet-productive-page">
-                            <div className="stage-level">
-                                {stages.map((stage, index) => (
-                                    <div key={index} className="stage-flow" style={{ '--block-color': stage.color, '--block-color-2': stage.bColor }}>
-                                        <p className="productive-time font-12 fw_500" style={{ color: index === 0 ? stage.color : '#000000aa', marginBottom: '5px' }}>
-                                            {stage.stageName}
-                                        </p>
-                                        <div className="block" style={{ backgroundColor: stage.color }}>
-                                            {stage.date}
-                                        </div>
-                                        <p className="btm-content font-14 fw_500">{stage.description}</p>
-                                    </div>
-                                ))}
+        try {
+            // Start progress simulation
+            progressInterval = setInterval(() => {
+                setLoadProgress(prev => Math.min(prev + 10, 90)); // Stop at 90% until load completes
+            }, 200);
+
+            const response = await axios.get(`http://localhost:48857/api/admin/timesheet/1/productive-rate`);
+            
+            // Calculate remaining minimum loading time
+            const elapsed = Date.now() - startTime;
+            const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsed);
+
+            setTimeout(() => {
+                clearInterval(progressInterval);
+                setActiveStage(response.data);
+                setLoadProgress(100);
+                
+                // Small delay to show 100% progress before hiding
+                setTimeout(() => setIsLoading(false), 300);
+            }, remainingTime);
+        } catch (error) {
+            console.error('Error fetching active stage:', error);
+            const elapsed = Date.now() - startTime;
+            const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsed);
+
+            setTimeout(() => {
+                clearInterval(progressInterval);
+                setLoadProgress(100);
+                setTimeout(() => setIsLoading(false), 300);
+            }, remainingTime);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchActiveStage();
+    }, [fetchActiveStage]);
+
+    return (
+        <>
+            {isLoading && (
+                <LoadingOverlay>
+                    <Spinner />
+                    <LoadingText>Loading Productivity Data...</LoadingText>
+                    <ProgressBar>
+                        <Progress progress={loadProgress} />
+                    </ProgressBar>
+                </LoadingOverlay>
+            )}
+
+            <Wrapper>
+                <div className="main-bg learning-section" id="mainContent">
+                    <div className="row">
+                        <div className="user-timesheet">
+                            <nav aria-label="breadcrumb">
+                                <ol className="breadcrumb ad-sck">
+                                    <li className="breadcrumb-item">
+                                        <Link to="/admin/aspirants-progress">Timesheet</Link>
+                                    </li>
+                                    <MdKeyboardArrowRight />
+                                    <li className="breadcrumb-item active" aria-current="page">
+                                        {studentId}
+                                    </li>
+                                </ol>
+                            </nav>
+                            <div className="usertime-id">
+                                <p className="usertime-name">Aspirant : {studentId} - {studentName}</p>
                             </div>
                         </div>
-                    </div>
-                    <div className="training-plan-content">
-                        <div className="product-rate">
-                            <div className="tech-stack d-flex justify-content-between">
-                                <Heading title='Productive rate' />
+                        <div className="ProductiveRate green mb-4">
+                            <p>Your dedication is truly inspiring.</p>
+                        </div>
+
+                        <div className="journey-timeline">
+                            <h6 className="font-20 fw_500">Journey Timeline</h6>
+                            <div className="timesheet-productive-page">
+                                <div className="stage-level">
+                                    {stages.map((stage, index) => (
+                                        <div key={index} className="stage-flow" style={{ '--block-color': stage.color, '--block-color-2': stage.bColor }}>
+                                            <p className="productive-time font-12 fw_500" style={{ color: index === 0 ? stage.color : '#000000aa', marginBottom: '5px' }}>
+                                                {stage.stageName}
+                                            </p>
+                                            <div className="block" style={{ backgroundColor: stage.color }}>
+                                                {stage.date}
+                                            </div>
+                                            <p className="btm-content font-14 fw_500">{stage.description}</p>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                            <div className="table-responsive any-role">
-                                <table className="table">
-                                    <thead>
-                                        <tr>
-                                            <th>Activity Category</th>
-                                            <th>Hours</th>
-                                            <th>Days</th>
-                                        </tr>
-                                    </thead>
-                                    {activeStage && (
-                                        <tbody>
+                        </div>
+                        <div className="training-plan-content">
+                            <div className="product-rate">
+                                <div className="tech-stack d-flex justify-content-between">
+                                    <Heading title='Productive rate' />
+                                </div>
+                                <div className="table-responsive any-role">
+                                    <table className="table">
+                                        <thead>
                                             <tr>
-                                                <td>Productive Effort</td>
-                                                <td>{activeStage.productivity?.hours || 0}</td>
-                                                <td>{activeStage.productivity?.days || 0}</td>
+                                                <th>Activity Category</th>
+                                                <th>Hours</th>
+                                                <th>Days</th>
                                             </tr>
-                                            <tr>
-                                                <td>System/Power issue</td>
-                                                <td>{activeStage.systemIssue?.hours || 0}</td>
-                                                <td>{activeStage.systemIssue?.days || 0}</td>
-                                            </tr>
-                                            <tr>
-                                                <td>Leave</td>
-                                                <td>{activeStage.leave?.hours || 0}</td>
-                                                <td>{activeStage.leave?.days || 0}</td>
-                                            </tr>
-                                            <tr>
-                                                <td>Permission</td>
-                                                <td>{activeStage.permission?.hours || 0}</td>
-                                                <td>{activeStage.permission?.days || 0}</td>
-                                            </tr>
-                                            <tr className="grand-value">
-                                                <td>Grand Total</td>
-                                                <td>{activeStage.totalHours}</td>
-                                                <td>{activeStage.totalDays}</td>
-                                            </tr>
-                                            <tr className="total-value">
-                                                <td>Productivity Rate</td>
-                                                <td></td>
-                                                <td>{activeStage.productiveEffortPercentage}%</td>
-                                            </tr>
-                                        </tbody>
-                                    )}
-                                </table>
+                                        </thead>
+                                        {isLoading ? (
+                                            <tbody>
+                                                <tr>
+                                                    <td colSpan="3" style={{ textAlign: 'center' }}>
+                                                        Loading productivity data...
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        ) : activeStage ? (
+                                            <tbody>
+                                                <tr>
+                                                    <td>Productive Effort</td>
+                                                    <td>{activeStage.productivity?.hours || 0}</td>
+                                                    <td>{activeStage.productivity?.days || 0}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>System/Power issue</td>
+                                                    <td>{activeStage.systemIssue?.hours || 0}</td>
+                                                    <td>{activeStage.systemIssue?.days || 0}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Leave</td>
+                                                    <td>{activeStage.leave?.hours || 0}</td>
+                                                    <td>{activeStage.leave?.days || 0}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Permission</td>
+                                                    <td>{activeStage.permission?.hours || 0}</td>
+                                                    <td>{activeStage.permission?.days || 0}</td>
+                                                </tr>
+                                                <tr className="grand-value">
+                                                    <td>Grand Total</td>
+                                                    <td>{activeStage.totalHours}</td>
+                                                    <td>{activeStage.totalDays}</td>
+                                                </tr>
+                                                <tr className="total-value">
+                                                    <td>Productivity Rate</td>
+                                                    <td></td>
+                                                    <td>{activeStage.productiveEffortPercentage}%</td>
+                                                </tr>
+                                            </tbody>
+                                        ) : (
+                                            <tbody>
+                                                <tr>
+                                                    <td colSpan="3">No productivity data available</td>
+                                                </tr>
+                                            </tbody>
+                                        )}
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </Wrapper>
+            </Wrapper>
+        </>
     );
 };
-
-
 
 export default ProductiveStudents;

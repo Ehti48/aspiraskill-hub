@@ -265,7 +265,7 @@ const Wrapper = styled.section`
     border-radius: 8px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     z-index: 1000;
-    width: 400px;
+    width: 500px;
     max-width: 90%;
     height: auto;
     align-items: start;
@@ -280,6 +280,11 @@ const Wrapper = styled.section`
       color: #252e4a99;
       font-size: 16px;
     }
+  }
+
+  .view-modal {
+    flex-direction: column !important;
+    height: auto !important;
   }
 
   .overlay {

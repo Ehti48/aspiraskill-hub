@@ -350,12 +350,13 @@ const Wrapper = styled.section`
   }
 `;
 
-const DashboardLayout = ({ onLogout }) => {
+const DashboardLayout = ({ onLogout}) => {
   const [headerText, setHeaderText] = useState("Dashboard");
   const location = useLocation();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  const name = localStorage.getItem("username");
   const handleDropdown = () =>
     setIsDropdownOpen(!isDropdownOpen);
 
@@ -900,7 +901,7 @@ const DashboardLayout = ({ onLogout }) => {
                 </div>
                 <div className="user-name">
                   <h2>Admin</h2>
-                  <Heading title="Ehtishamul Haque" />
+                  <Heading title={name || "Ehtishamul Haque"} />
                 </div>
                 <img
                   className="arrow-img"

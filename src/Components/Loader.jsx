@@ -11,6 +11,10 @@ const Wrapper = styled.section`
         justify-content: center;
         align-items: center;
         overflow: hidden;
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 9999;
     }
 
     .loader {

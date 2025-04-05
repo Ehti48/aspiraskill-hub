@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
-import { MdKeyboardArrowRight } from "react-icons/md";
-import styled from "styled-components";
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import axios from 'axios';
+import styled, { keyframes } from 'styled-components';
+import { MdKeyboardArrowRight } from 'react-icons/md';
 import Heading from "../Heading";
 import Button from "../Button";
 
@@ -61,11 +62,10 @@ const Wrapper = styled.section`
   }
 
   .odd {
-    min-width: 1200PX;
     height: 45px;
     padding-left: 10px;
     display: grid;
-    grid-template-columns: 0.4fr 0.5fr 1.5fr 1.5fr 1.8fr 1fr 0.8fr !important;
+    grid-template-columns: 0.4fr 0.6fr 1.2fr 1.2fr 1.2fr 0.8fr 0.8fr !important;
     border: 1px solid #cbcbcb;
     border-top: none;
     justify-content: space-evenly;
@@ -142,6 +142,7 @@ const Wrapper = styled.section`
     flex-wrap: wrap;
 
     svg {
+      margin-bottom: -6px;
       font-size: 30px;
       color: #252E4A99;
     }
@@ -152,7 +153,7 @@ const Wrapper = styled.section`
     }
 
     span {
-      color: #252E4A99;
+      color: #252E4A;
       cursor: pointer;
     }
   }
@@ -523,10 +524,14 @@ const Select = styled.select`
 `;
 
 const ButtonGroup = styled.div`
-  width: 100%;
-  display: flex;
-  justify-content: flex-end;
-  gap: 15px;
+width: 95%;
+display: flex;
+justify-content: flex-end;
+gap: 15px;
+background: #fff;
+position: absolute;
+left: 0px;
+bottom: 20px;
 `;
 
 const ModalButton = styled.button`
@@ -555,289 +560,404 @@ const CancelButton = styled(ModalButton)`
   color: #0078d7;
 `;
 
+// Image URLs
+const IMAGES = {
+  eye: "https://admin.aspiraskillhub.aspirasys.com/images/eye.png",
+  edit: "https://admin.aspiraskillhub.aspirasys.com/images/edit-2.png",
+  trash: "https://admin.aspiraskillhub.aspirasys.com/images/trash.png",
+  deleteIcon: "https://admin.aspiraskillhub.aspirasys.com/images/mdi_trash.png"
+};
+
+// Loading animation
+const spin = keyframes`
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+`;
+
+const LoadingOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.9);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  transition: opacity 0.3s ease-out;
+`;
+
+const Spinner = styled.div`
+  width: 50px;
+  height: 50px;
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #3498db;
+  border-radius: 50%;
+  animation: ${spin} 1.5s linear infinite;
+`;
+
+const LoadingText = styled.p`
+  margin-top: 20px;
+  font-size: 1.2rem;
+  color: #333;
+  font-weight: 500;
+`;
+
+const ProgressBar = styled.div`
+  width: 200px;
+  height: 8px;
+  background-color: #f3f3f3;
+  border-radius: 4px;
+  margin-top: 15px;
+  overflow: hidden;
+`;
+
+const Progress = styled.div`
+  height: 100%;
+  width: ${props => props.progress}%;
+  background-color: #3498db;
+  transition: width 0.3s ease;
+`;
+
 const Material = () => {
-  const [materials, setMaterials] = useState([
-    { id: 1, name: "Material 1", description: "Description 1" },
-    { id: 2, name: "Material 2", description: "Description 2" },
-    { id: 3, name: "Material 3", description: "Description 3" },
-    { id: 4, name: "Material 4", description: "Description 4" },
-    { id: 5, name: "Material 5", description: "Description 5" },
-    { id: 6, name: "Material 6", description: "Description 6" },
-    { id: 7, name: "Material 7", description: "Description 7" },
-    { id: 8, name: "Material 8", description: "Description 8" },
-    { id: 9, name: "Material 9", description: "Description 9" },
-    { id: 10, name: "Material 10", description: "Description 10" },
-    { id: 11, name: "Material 11", description: "Description 11" },
-    { id: 12, name: "Material 12", description: "Description 12" },
-    { id: 13, name: "Material 13", description: "Description 13" },
-    { id: 14, name: "Material 14", description: "Description 14" },
-    { id: 15, name: "Material 15", description: "Description 15" },
-    { id: 16, name: "Material 16", description: "Description 16" },
-    { id: 17, name: "Material 17", description: "Description 17" },
-    { id: 18, name: "Material 18", description: "Description 18" },
-    { id: 19, name: "Material 19", description: "Description 19" },
-    { id: 20, name: "Material 20", description: "Description 20" },
-  ]);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [materialToDelete, setMaterialToDelete] = useState(null);
-  const [currentMaterial, setCurrentMaterial] = useState(null); // Current material for editing
-  const [currentPage, setCurrentPage] = useState(1);
-  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
-  const [videoUrl, setVideoUrl] = useState("");
+  const [state, setState] = useState({
+    materials: [],
+    modalOpen: false,
+    deleteModalOpen: false,
+    materialToDelete: null,
+    currentMaterial: null,
+    currentPage: 1,
+    isVideoModalOpen: false,
+    videoUrl: "",
+    isLoading: true,
+    loadProgress: 0
+  });
 
   const navigate = useNavigate();
   const location = useLocation();
+  const { techId, stageId, stageTitle, techStackName } = location.state || {};
+
+  // Fetch materials with extended loader
+  const fetchMaterials = useCallback(async () => {
+    const MIN_LOADING_TIME = 2000; // Minimum 2 seconds loading time
+    const startTime = Date.now();
+    let progressInterval;
+
+    try {
+      // Start progress simulation
+      progressInterval = setInterval(() => {
+        setState(prev => ({
+          ...prev,
+          loadProgress: Math.min(prev.loadProgress + 10, 90) // Stop at 90% until load completes
+        }));
+      }, 300);
+
+      const response = await axios.get(
+        `http://localhost:3000/admin/technology_stages/${techId}/${stageTitle}`
+      );
+
+      // Calculate remaining minimum loading time
+      const elapsed = Date.now() - startTime;
+      const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsed);
+
+      setTimeout(() => {
+        clearInterval(progressInterval);
+        setState(prev => ({
+          ...prev,
+          materials: response.data || [],
+          loadProgress: 100,
+          isLoading: false
+        }));
+      }, remainingTime);
+    } catch (error) {
+      console.error("Error fetching materials:", error);
+      const elapsed = Date.now() - startTime;
+      const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsed);
+
+      setTimeout(() => {
+        clearInterval(progressInterval);
+        setState(prev => ({
+          ...prev,
+          loadProgress: 100,
+          isLoading: false
+        }));
+      }, remainingTime);
+    }
+  }, [techId, stageTitle]);
 
   useEffect(() => {
-    const storedMaterials = localStorage.getItem("materials");
-    if (storedMaterials) {
-      setMaterials(JSON.parse(storedMaterials));
+    if (techId && stageTitle) {
+      setState(prev => ({
+        ...prev,
+        isLoading: true,
+        loadProgress: 0
+      }));
+      fetchMaterials();
     }
+  }, [techId, stageTitle, fetchMaterials]);
+
+  // Event handlers
+  const handleEditMaterial = useCallback((material) => {
+    setState(prev => ({
+      ...prev,
+      currentMaterial: material,
+      modalOpen: true
+    }));
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem("materials", JSON.stringify(materials));
-  }, [materials]);
-
-  // Handle saving or updating material
-  const handleSaveMaterial = (formData) => {
-    if (currentMaterial) {
-      // Update existing material
-      const updatedMaterials = materials.map((material) =>
-        material.id === currentMaterial.id
-          ? { ...material, ...formData }
-          : material
+  const handleDeleteMaterial = useCallback(async () => {
+    try {
+      await axios.delete(
+        `http://localhost:3000/admin/technology_stages/${techId}/${stageTitle}/delete/${state.materialToDelete.id}`
       );
-      setMaterials(updatedMaterials);
-      localStorage.setItem("materials", JSON.stringify(updatedMaterials)); // Save to local storage
-      setCurrentMaterial(null); // Reset after saving
-    } else {
-      // Add new material
-      const newMaterials = [...materials, { ...formData, id: Date.now() }];
-      setMaterials(newMaterials);
-      localStorage.setItem("materials", JSON.stringify(newMaterials)); // Save to local storage
+      setState(prev => ({
+        ...prev,
+        materials: prev.materials.filter(mat => mat.id !== prev.materialToDelete.id),
+        deleteModalOpen: false
+      }));
+    } catch (error) {
+      console.error("Error deleting material:", error);
     }
-    setModalOpen(false); // Close modal after saving
-  };
+  }, [techId, stageTitle, state.materialToDelete]);
 
-  // Handle editing material
-  const handleEditMaterial = (material) => {
-    setCurrentMaterial(material);
-    setModalOpen(true); // Open modal for editing
-  };
+  const openDeleteModal = useCallback((material) => {
+    setState(prev => ({
+      ...prev,
+      materialToDelete: material,
+      deleteModalOpen: true
+    }));
+  }, []);
 
-  // Handle deletion
-  const handleDeleteMaterial = () => {
-    const updatedMaterials = materials.filter(
-      (material) => material.id !== materialToDelete.id
-    );
-    setMaterials(updatedMaterials);
-    setDeleteModalOpen(false);
-  };
+  const openVideoModal = useCallback((url) => {
+    setState(prev => ({
+      ...prev,
+      videoUrl: url,
+      isVideoModalOpen: true
+    }));
+  }, []);
 
-  const openDeleteModal = (material) => {
-    setMaterialToDelete(material);
-    setDeleteModalOpen(true);
-  };
+  const closeModal = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      modalOpen: false,
+      deleteModalOpen: false,
+      isVideoModalOpen: false,
+      currentMaterial: null
+    }));
+  }, []);
 
-  const pages = Math.ceil(materials.length / 10);
-  const start = (currentPage - 1) * 10;
-  const end = start + 10;
-  const paginatedMaterial = materials.slice(start, end);
-
-  const renderBreadcrumb = () => {
-    return location.pathname.includes("/detail") && location.state ? (
+  // Breadcrumb render
+  const renderBreadcrumb = useCallback(() => {
+    return (
       <div className="breadcrumb">
         <Link to="/admin/my-learnings">My Learnings</Link>
-        <MdKeyboardArrowRight />
-        <span onClick={() => navigate(-1)}>
-          {location.state.techStackName || "Unknown"}
-        </span>
-        <MdKeyboardArrowRight />
-        <p>{location.state.stageTitle || "Unknown"}</p>
+        <span> <MdKeyboardArrowRight /> </span>
+        <Link onClick={() => navigate(-1)}>
+          {techStackName || "Tech Stack"}
+        </Link>
+        <span> <MdKeyboardArrowRight /> </span>
+        <span>{stageTitle || "Stage"}</span>
       </div>
-    ) : null;
-  };
+    );
+  }, [navigate, techStackName, stageTitle]);
 
   return (
-    <Wrapper>
-      {/* Add or Edit Material Modal */}
-      {modalOpen && (
-        <ModalForm
-          material={currentMaterial} // Pass the current material for editing
-          onSave={handleSaveMaterial} // Save handler
-          onClose={() => setModalOpen(false)}
-        />
+    <>
+      {state.isLoading && (
+        <LoadingOverlay>
+          <Spinner />
+          <LoadingText>Loading Materials...</LoadingText>
+          <ProgressBar>
+            <Progress progress={state.loadProgress} />
+          </ProgressBar>
+        </LoadingOverlay>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {deleteModalOpen && (
-        <div className="modal">
-          <div className="modal-content">
-            <div className="del-icon">
-              <img
-                src="https://admin.aspiraskillhub.aspirasys.com/images/mdi_trash.png"
-                alt="delete"
-              />
-            </div>
-            <p>Are you sure?</p>
-            <span>To delete {materialToDelete.name}</span>
-            <div className="btn-group">
-              <ModalButton
-                className="btn-2"
-                onClick={() => setDeleteModalOpen(false)}
-              >
-                No
-              </ModalButton>
-              <ModalButton onClick={handleDeleteMaterial}>
-                Yes, delete
-              </ModalButton>
+      <Wrapper>
+        {/* Add or Edit Material Modal */}
+        {state.modalOpen && (
+          <ModalForm
+            stageTitle={stageTitle}
+            stageId={stageId}
+            techId={techId}
+            material={state.currentMaterial}
+            setMaterial={(newMaterials) => setState(prev => ({
+              ...prev,
+              materials: newMaterials
+            }))}
+            onClose={closeModal}
+          />
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {state.deleteModalOpen && (
+          <div className="modal">
+            <div className="modal-content">
+              <div className="del-icon">
+                <img src={IMAGES.deleteIcon} alt="delete" />
+              </div>
+              <p>Are you sure?</p>
+              <span>To delete {state.materialToDelete?.name}</span>
+              <div className="btn-group">
+                <ModalButton className="btn-2" onClick={closeModal}>
+                  No
+                </ModalButton>
+                <ModalButton onClick={handleDeleteMaterial}>
+                  Yes, delete
+                </ModalButton>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {isVideoModalOpen && (
-        <>
-          <div
-            className="overlay"
-            onClick={() => setIsVideoModalOpen(false)}
-          ></div>
-          <div className="modal video-modal">
-            <div className="modal-header">
-              <h3>Video Preview</h3>
-              <button onClick={() => setIsVideoModalOpen(false)}>✖</button>
+        {/* Video Modal */}
+        {state.isVideoModalOpen && (
+          <>
+            <div className="overlay" onClick={closeModal}></div>
+            <div className="modal video-modal">
+              <div className="modal-header">
+                <h3>Video Preview</h3>
+                <button onClick={closeModal}>✖</button>
+              </div>
+              <div className="modal-body">
+                <iframe
+                  src={state.videoUrl}
+                  title="Video Player"
+                  width="100%"
+                  height="400px"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              </div>
             </div>
-            <div className="modal-body">
-              <iframe
-                src={videoUrl}
-                title="Video Player"
-                width="100%"
-                height="400px"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              ></iframe>
-            </div>
+          </>
+        )}
+
+        {renderBreadcrumb()}
+        <div className="container">
+          <div className="header">
+            <Heading title={stageTitle || "Materials"} />
+            <Button
+              className="addBtn"
+              onClick={() => {
+                setState(prev => ({
+                  ...prev,
+                  currentMaterial: null,
+                  modalOpen: true
+                }));
+              }}
+            >
+              + Add Material
+            </Button>
           </div>
-        </>
-      )}
-
-      {renderBreadcrumb()}
-      <div className="container">
-        <div className="header">
-          <Heading title={location.state.stageTitle || "Unknown"} />
-          <Button
-            className="addBtn"
-            onClick={() => {
-              setCurrentMaterial(null); // Ensure we're in "add" mode
-              setModalOpen(true);
-            }}
-          >
-            + Add Material
-          </Button>
-        </div>
-        <div className="tab">
-          <table className="tab-cols">
-            <thead>
-              <tr className="odd odd1">
-                <td>#</td>
-                <td>Type</td>
-                <td>Technology Name</td>
-                <td>Video Link</td>
-                <td>Learning Link</td>
-                <td>Thumbnail</td>
-                <td>Action</td>
-              </tr>
-            </thead>
-            <tbody>
-              {materials.length > 0 ? (
-                paginatedMaterial.map((material, index) => (
-                  <tr className="odd" key={material.id}>
-                    <td>{(currentPage - 1) * 10 + index + 1}</td>
-                    <td>{material.type || "-"}</td>
-                    <td>{material.name}</td>
-                    <td>{material.videoLink || "-"}</td>
-                    <td>{material.learningLink || "-"}</td>
-                    <td>
-                      {material.thumbnail ? (
-                        <img
-                          src={material.thumbnail}
-                          alt={material.name}
-                          width="50"
-                          height="50"
-                        />
-                      ) : (
-                        "-"
-                      )}
-                    </td>
-                    <td className="stack-output">
-                      <button
-                        onClick={() => {
-                          setVideoUrl(material.videoLink); // Use referal_link_1 or referal_link_2
-                          setIsVideoModalOpen(true);
-                        }}
-                      >
-                        <img
-                          id="action-icons"
-                          src="https://admin.aspiraskillhub.aspirasys.com/images/eye.png"
-                          alt="View"
-                        />
-                      </button>
-                      <button onClick={() => handleEditMaterial(material)}>
-                        {" "}
-                        {/* Set current material for editing */}
-                        <img
-                          id="action-icons"
-                          src="https://admin.aspiraskillhub.aspirasys.com/images/edit-2.png"
-                          alt="Edit"
-                        />
-                      </button>
-                      <button onClick={() => openDeleteModal(material)}>
-                        <img
-                          id="action-icons"
-                          src="https://admin.aspiraskillhub.aspirasys.com/images/trash.png"
-                          alt="Delete"
-                        />
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr className="odd odd2">
-                  <td colSpan="7">No data available in the table.</td>
+          <div className="tab">
+            <table className="tab-cols">
+              <thead>
+                <tr className="odd odd1">
+                  <td>#</td>
+                  <td>Type</td>
+                  <td>Technology Name</td>
+                  <td>Video Link</td>
+                  <td>Learning Link</td>
+                  <td>Thumbnail</td>
+                  <td>Action</td>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {state.materials.length > 0 ? (
+                  state.materials.map((material, index) => (
+                    <tr className="odd" key={material.id}>
+                      <td>{(state.currentPage - 1) * 10 + index + 1}</td>
+                      <td>{material.type || "-"}</td>
+                      <td className="cut-text">{material.name}</td>
+                      <td className="cut-text">{material.referal_link_1 || "-"}</td>
+                      <td className="cut-text">{material.referal_link_2 || "-"}</td>
+                      <td>
+                        {material.image ? (
+                          <img
+                            src={material.image}
+                            alt={material.name}
+                            width="50"
+                            height="50"
+                          />
+                        ) : (
+                          "-"
+                        )}
+                      </td>
+                      <td className="stack-output">
+                        <button onClick={() => openVideoModal(material.referal_link_1)}>
+                          <img
+                            id="action-icons"
+                            src={IMAGES.eye}
+                            alt="View"
+                          />
+                        </button>
+                        <button onClick={() => handleEditMaterial(material)}>
+                          <img
+                            id="action-icons"
+                            src={IMAGES.edit}
+                            alt="Edit"
+                          />
+                        </button>
+                        <button onClick={() => openDeleteModal(material)}>
+                          <img
+                            id="action-icons"
+                            src={IMAGES.trash}
+                            alt="Delete"
+                          />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr className='odd odd2'>
+                    <td colSpan="7">No data available in the table.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
-    </Wrapper>
+      </Wrapper>
+    </>
   );
 };
 
-const ModalForm = ({ material, onSave, onClose }) => {
+const ModalForm = ({ material, setMaterial, stageId, stageTitle, techId, onSave, onClose }) => {
   const [formData, setFormData] = useState({
     type: "",
     name: "",
     videoLink: "",
     learningLink: "",
-    thumbnail: "", // Do not bind file input to state
+    thumbnail: "",
     language: "",
-    concept: "", // Ensure the concept is part of formData
+    concept: "",
   });
 
   useEffect(() => {
+    const languageMap = {
+      1: "English",
+      2: "Hindi",
+      3: "Tamil",
+    };
+
+    const typeMap = {
+      1: "Material",
+      2: "Project"
+    }
+
     if (material) {
       setFormData({
-        type: material.type || "",
+        type: typeMap[material.type] || "",
         name: material.name || "",
-        videoLink: material.videoLink || "",
-        learningLink: material.learningLink || "",
-        thumbnail: material.thumbnail || "",
-        language: material.language || "",
-        concept: material.concept || "", // Set concept field on material load
+        videoLink: material.referal_link_1 || "",
+        learningLink: material.referal_link_2 || "",
+        thumbnail: material.image || "",
+        language: languageMap[material.language_id] || "",
+        concept: material.description || "",
       });
     } else {
       setFormData({
@@ -847,7 +967,7 @@ const ModalForm = ({ material, onSave, onClose }) => {
         learningLink: "",
         thumbnail: "",
         language: "",
-        concept: "", // Clear concept when no material
+        concept: "",
       });
     }
   }, [material]);
@@ -858,8 +978,7 @@ const ModalForm = ({ material, onSave, onClose }) => {
   };
 
   const handleRadioChange = (e) => {
-    const { value } = e.target;
-    setFormData((prev) => ({ ...prev, type: value }));
+    setFormData((prev) => ({ ...prev, type: e.target.value }));
   };
 
   const handleFileChange = (e) => {
@@ -872,9 +991,96 @@ const ModalForm = ({ material, onSave, onClose }) => {
     }
   };
 
-  const handleSubmit = (e) => {
+  // **CRUD Operations**
+
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+
+  //   console.log("stageTitle:", stageTitle);
+  //   console.log("techId:", techId);
+  //   console.log("formData:", formData);
+
+  //   if (!formData.name || !stageId || !techId) {
+  //     alert("Missing required fields!");
+  //     return;
+  //   }
+  // };
+
+
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSave(formData); // onSave should either add or update based on material presence
+
+    const languageIdMap = {
+      English: 1,
+      Hindi: 2,
+      Tamil: 3,
+    };
+
+    const typeIdMap = {
+      Material: 1,
+      Project: 2
+    }
+
+    if (!formData.name || !stageId || !techId) {
+      alert("Missing required fields!");
+      return;
+    }
+
+    const isUpdating = !!material;
+    const method = isUpdating ? "PUT" : "POST";
+    const url = isUpdating
+      ? `http://localhost:3000/admin/technology_stages/${stageTitle}/${techId}/update/${material.id}`
+      : `http://localhost:3000/admin/technology_stages/${stageTitle}/${techId}/create`;
+
+    const payload = {
+      type: typeIdMap[formData.type] || "",
+      name: formData.name,
+      referal_link_1: formData.videoLink,
+      referal_link_2: formData.learningLink,
+      image: formData.thumbnail,
+      language_id: languageIdMap[formData.language] || "",
+      description: formData.concept,
+    };
+
+    try {
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      console.log("Response Status:", response.status);
+      console.log("Response Headers:", response.headers);
+
+      const text = await response.text();
+      console.log("Response Body:", text);
+
+      if (response.ok) {
+        const data = JSON.parse(text); // Parse manually
+        console.log("Payload Data:", payload);
+        console.log(material ? "Updated successfully!" : "Created successfully!");
+
+        // Fetch updated materials list
+        const updatedMaterials = await fetch(`
+          http://localhost:3000/admin/technology_stages/${techId}/${stageTitle}`
+        ).then(res => res.json());
+
+        console.log("Updated Materials:", updatedMaterials);
+
+        setMaterial(updatedMaterials); // Ensure setMaterial exists
+
+        onSave?.(data);
+        onClose?.();
+      } else {
+        console.error("Server Error:", text);
+        alert(`Error: ${text}`);
+      }
+    } catch (error) {
+      console.error("Fetch Error:", error.message);
+      alert(`An unexpected error occurred: ${error.message}`);
+    }
+
   };
 
   return (
@@ -885,7 +1091,6 @@ const ModalForm = ({ material, onSave, onClose }) => {
         <Form onSubmit={handleSubmit}>
           <div className="flex-sec">
             <div className="modal-section">
-              {/* Type Radio Buttons */}
               <div className="form-group">
                 <Label htmlFor="type">Type</Label>
                 <div className="type-cont">
@@ -914,7 +1119,6 @@ const ModalForm = ({ material, onSave, onClose }) => {
                 </div>
               </div>
 
-              {/* Video Link */}
               <div className="form-group">
                 <Label htmlFor="videoLink">Video Link</Label>
                 <Input
@@ -923,48 +1127,31 @@ const ModalForm = ({ material, onSave, onClose }) => {
                   value={formData.videoLink}
                   onChange={handleChange}
                 />
-                <div className="paste">
-                  <img src="https://admin.aspiraskillhub.aspirasys.com/images/paste.png" />
-                </div>
               </div>
 
-              {/* Thumbnail URL */}
               <div className="form-group">
                 <Label htmlFor="thumbnail">Thumbnail URL</Label>
                 <div className="upload-img">
-                  <label htmlFor="editImage_0"></label>
                   <img
                     src={
                       formData.thumbnail ||
                       "https://admin.aspiraskillhub.aspirasys.com/images/no-image-found.jpg"
                     }
                     alt=""
-                    className="edit-updated-image updated-addImage"
+                    className="edit-updated-image"
                   />
-                  <div className="upload-content edit-tech-old">
-                    <div className="edit-photo">
-                      <img
-                        src="https://admin.aspiraskillhub.aspirasys.com/images/no-image-found.jpg"
-                        alt="profile"
-                      />
-                    </div>
-                    <p className="font-16 fw_500"> Upload image</p>
-                  </div>
                   <input
                     type="file"
                     name="thumbnail"
                     onChange={handleFileChange}
-                    className="input editImage"
+                    className="input"
                     id="editImage_0"
-                  // required
                   />
                 </div>
               </div>
             </div>
 
-            {/* Second Section */}
             <div className="modal-section">
-              {/* Topic Name */}
               <div className="form-group">
                 <Label htmlFor="name">Topic Name</Label>
                 <Input
@@ -976,7 +1163,6 @@ const ModalForm = ({ material, onSave, onClose }) => {
                 />
               </div>
 
-              {/* Learning Link */}
               <div className="form-group">
                 <Label htmlFor="learningLink">Learning Link</Label>
                 <Input
@@ -986,12 +1172,8 @@ const ModalForm = ({ material, onSave, onClose }) => {
                   onChange={handleChange}
                   required
                 />
-                <div className="paste">
-                  <img src="https://admin.aspiraskillhub.aspirasys.com/images/paste.png" />
-                </div>
               </div>
 
-              {/* Language Selection */}
               <div className="form-group">
                 <Label htmlFor="language">Select Language</Label>
                 <Select
@@ -1000,23 +1182,22 @@ const ModalForm = ({ material, onSave, onClose }) => {
                   onChange={handleChange}
                   required
                 >
-                  <option value="Select Language">Select Language</option>
+                  <option value="">Select Language</option>
                   <option value="English">English</option>
                   <option value="Hindi">Hindi</option>
                   <option value="Tamil">Tamil</option>
                 </Select>
               </div>
 
-              {/* Concept (Where to Place This) */}
               <div className="form-group">
                 <Label htmlFor="concept">Where to place this</Label>
                 <Select
                   name="concept"
                   value={formData.concept}
                   onChange={handleChange}
-                  required
+                // required
                 >
-                  <option value="Select After">Select After</option>
+                  <option value="">Select After</option>
                   <option value="Concept-1">Concept-1</option>
                   <option value="Concept-2">Concept-2</option>
                   <option value="Concept-3">Concept-3</option>
@@ -1036,4 +1217,6 @@ const ModalForm = ({ material, onSave, onClose }) => {
     </ModalWrapper>
   );
 };
+
+
 export default Material;

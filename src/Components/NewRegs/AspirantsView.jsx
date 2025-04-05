@@ -94,7 +94,7 @@ const Wrapper = styled.section`
         height: 16px;
         position: absolute;
         right: 22px;
-        bottom: 13px !important;
+        bottom: 15px !important;
         background: white;
         pointer-events: none;
         bottom: 12px;
