@@ -420,8 +420,10 @@ function MasterData() {
   useEffect(() => {
     const fetchAspirants = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/admin/masterdata/list");
+        const response = await axios.get("https://api.aspiraskillhub.aspirasys.com/admin/masterdata/list");
         const data = response.data || [];
+        console.log("API Response:", data);
+        
         // ✅ Format data with status and technology_name
         const formattedData = data.map(aspirant => formatAspirantData(aspirant));
         setAspirants(formattedData);

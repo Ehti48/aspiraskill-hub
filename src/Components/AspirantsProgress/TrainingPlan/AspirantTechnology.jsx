@@ -273,7 +273,9 @@ const Wrapper = styled.section`
     flex-direction: column;
 
     &.delete {
-      text-align: center;
+      max-width: 400px;
+      display: flex;
+      align-items: center;
     }
 
     label {
@@ -420,7 +422,8 @@ const AspirantTecnology = () => {
     techId: '',
     stages: '',
     projects: '',
-    materials: ''
+    materials: '',
+    language_id: ''
   });
   const [deleteIndex, setDeleteIndex] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -430,13 +433,14 @@ const AspirantTecnology = () => {
   const location = useLocation();
   const studentId = location.state?.studentId;
   const studentName = location.state?.studentName;
+  const userId = location.state?.userId;
 
   // Fetch data from API
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:48857/api/admin/aspirant/2/technologies"
+          `https://api.aspiraskillhub.aspirasys.com/api/admin/aspirant/${userId}/technologies`
         );
 
         console.log("API Full Response:", response);
@@ -452,31 +456,91 @@ const AspirantTecnology = () => {
       }
     };
 
-    fetchData();
-  }, []);
+    if (userId) {
+      fetchData();
+    }
+  }, [userId]);
 
-  const techDetails = {
-    'Basic Web Technology': { techId: '1', stages: '3', projects: '10', materials: '100' },
-    'Asp Dot Net': { techId: '2', stages: '5', projects: '12', materials: '150' },
-    'Python': { techId: '3', stages: '3', projects: '7', materials: '50' },
-    'Java': { techId: '4', stages: '5', projects: '10', materials: '100' },
-    'JavaScript': { techId: '5', stages: '3', projects: '8', materials: '80' },
-    'C++': { techId: '6', stages: '4', projects: '9', materials: '120' },
-  };
+  const [availableTechnologies, setAvailableTechnologies] = useState([]);
+
+  useEffect(() => {
+    const fetchAvailableTechnologies = async () => {
+      try {
+        const response = await axios.get('https://api.aspiraskillhub.aspirasys.com/admin/technologies');
+        setAvailableTechnologies(response.data);
+      } catch (error) {
+        console.error('Error fetching available technologies:', error);
+      }
+    };
+
+    fetchAvailableTechnologies();
+  }, []);
 
   const handleSearchChange = (e) => setSearchQuery(e.target.value);
 
-  const handleTechChange = (e) => {
-    const selectedTech = e.target.value;
-    const techInfo = techDetails[selectedTech] || { techId: "", stages: "0", projects: "0", materials: "0" };
+  const handleTechChange = async (e) => {
+    const selectedTechName = e.target.value;
+    const selectedTech = availableTechnologies.find((tech) => tech.name === selectedTechName);
+
+    if (!selectedTech) return;
+
+    const techId = selectedTech.id;
+
+    // Update the newTech state with the selected technology info
     setNewTech({
       ...newTech,
-      techName: selectedTech,
-      techId: techInfo.techId,
-      stages: techInfo.stages,
-      projects: techInfo.projects,
-      materials: techInfo.materials,
+      techName: selectedTechName,
+      techId: techId,
     });
+
+    // Only fetch additional details if we have both techId and language_id
+    if (techId && newTech.language_id) {
+      try {
+        const response = await axios.get(
+          `https://api.aspiraskillhub.aspirasys.com/api/admin/technology/${techId}/language/${newTech.language_id}/details`
+        );
+
+        const { no_stages, total_projects, total_materials } = response.data;
+
+        setNewTech(prev => ({
+          ...prev,
+          stages: no_stages,
+          projects: total_projects,
+          materials: total_materials,
+        }));
+      } catch (error) {
+        console.error("Error fetching technology details:", error);
+      }
+    }
+  };
+
+  const handleLanguageChange = async (e) => {
+    const language_id = Number(e.target.value);
+    
+    setNewTech(prev => ({
+      ...prev,
+      language_id: language_id
+    }));
+
+    // Only fetch additional details if we have both techId and language_id
+    if (newTech.techId && language_id) {
+      try {
+        const response = await axios.get(
+          `https://api.aspiraskillhub.aspirasys.com/api/admin/technology/${newTech.techId}/language/${language_id}/details`
+        );
+
+        const { no_stages, total_projects, total_materials } = response.data;
+
+        setNewTech(prev => ({
+          ...prev,
+          stages: no_stages,
+          projects: total_projects,
+          materials: total_materials,
+        }));
+      } catch (error) {
+        console.error("Error fetching technology details:", error);
+      }
+    }
   };
 
   const handleAddTrainingPlan = async () => {
@@ -485,24 +549,27 @@ const AspirantTecnology = () => {
       return;
     }
 
+    if (!newTech.language_id) {
+      alert("Please select a language");
+      return;
+    }
+
     try {
-      // Prepare the data to match the backend expectations
       const requestData = {
-        technology_id: newTech.techId, // Use techId as technology_id
-        language_id: 1, // Assuming language_id is required (you can make this dynamic)
+        technology_id: newTech.techId,
+        language_id: newTech.language_id,
       };
 
       // Make the POST request
       const response = await axios.post(
-        `http://localhost:48857/api/admin/aspirant/2/technologies`, // Use dynamic studentId
+        `https://api.aspiraskillhub.aspirasys.com/api/admin/aspirant/${userId}/technologies`,
         requestData
       );
 
       if (response.status === 201 || response.status === 200) {
-
-        // alert("Training plan added successfully!");
+        // Refresh the technologies list
         const updatedResponse = await axios.get(
-          `http://localhost:48857/api/admin/aspirant/2/technologies`
+          `https://api.aspiraskillhub.aspirasys.com/api/admin/aspirant/${userId}/technologies`
         );
 
         // Update the local state with the new data
@@ -515,6 +582,7 @@ const AspirantTecnology = () => {
           stages: "",
           projects: "",
           materials: "",
+          language_id: ""
         });
 
         // Close the modal
@@ -525,38 +593,43 @@ const AspirantTecnology = () => {
     } catch (error) {
       console.error("Error adding training plan:", error);
       alert(
-        `Error adding training plan: ${error.response?.data?.message || error.message
-        }`
+        `Error adding training plan: ${error.response?.data?.message || error.message}`
       );
     }
   };
 
   const handleCancel = () => {
     setIsModalOpen(false);
+    setIsDeleteModalOpen(false);
     setNewTech({
       techName: "",
       techId: "",
       stages: "",
       projects: "",
-      materials: ""
+      materials: "",
+      language_id: ""
     });
   };
 
   const handleDelete = async () => {
     try {
+      if (deleteIndex === null || !tech[deleteIndex]) {
+        alert("Error: No technology selected for deletion");
+        setIsDeleteModalOpen(false);
+        return;
+      }
+
       await axios.delete(
-        `http://localhost:48857/api/admin/aspirant/2/technologies/2`
+        `https://api.aspiraskillhub.aspirasys.com/api/admin/aspirant/${userId}/technologies/${tech[deleteIndex].technology_id}`
       );
 
-      const updatedStudents = tech.filter((_, i) => i !== deleteIndex);
-      setTech(updatedStudents);
-      localStorage.setItem('tech', JSON.stringify(updatedStudents));
+      const updatedTech = tech.filter((_, i) => i !== deleteIndex);
+      setTech(updatedTech);
       setIsDeleteModalOpen(false);
     } catch (error) {
       console.error("Error deleting technology:", error);
       alert(
-        `Error deleting technology: ${error.response?.data?.message || error.message
-        }`
+        `Error deleting technology: ${error.response?.data?.message || error.message}`
       );
     }
   };
@@ -568,7 +641,7 @@ const AspirantTecnology = () => {
 
   const filteredTech = tech.filter(
     (t) =>
-      (t.techId && t.techId.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (t.technology_id && String(t.technology_id).toLowerCase().includes(searchQuery.toLowerCase())) ||
       (t.technology && t.technology.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
@@ -585,7 +658,7 @@ const AspirantTecnology = () => {
           <div className="modal">
             <div className="modal-header">
               <Heading title='Training Material' />
-              <button onClick={() => setIsModalOpen(false)}>✖</button>
+              <button onClick={handleCancel}>✖</button>
             </div>
             {techIdError && <p className="error-message">{techIdError}</p>}
             <div className="input-group">
@@ -593,13 +666,13 @@ const AspirantTecnology = () => {
               <select
                 name="techName"
                 id="techName"
-                value={newTech.techName} // Use techName instead of technology
+                value={newTech.techName}
                 onChange={handleTechChange}
               >
                 <option value="">Select Technology Name</option>
-                {Object.keys(techDetails).map((tech, index) => (
-                  <option value={tech} key={index}>
-                    {tech}
+                {availableTechnologies.map((tech) => (
+                  <option key={tech.id} value={tech.name}>
+                    {tech.name}
                   </option>
                 ))}
               </select>
@@ -610,12 +683,13 @@ const AspirantTecnology = () => {
                 name="language"
                 id="language"
                 value={newTech.language_id}
-                onChange={(e) => setNewTech({ ...newTech, language_id: e.target.value })}
+                onChange={handleLanguageChange}
+                required
               >
                 <option value="">Select Language</option>
                 <option value="1">English</option>
-                <option value="2">Hindi</option>
-                <option value="3">Tamil</option>
+                <option value="2">Tamil</option>
+                <option value="3">Hindi</option>
               </select>
             </div>
             <div className="modal-detail">
@@ -639,7 +713,6 @@ const AspirantTecnology = () => {
           </div>
         </>
       )}
-
       {isDeleteModalOpen && (
         <>
           <div className="overlay" onClick={() => setIsDeleteModalOpen(false)}></div>
@@ -650,8 +723,8 @@ const AspirantTecnology = () => {
             <div className="del-icon">
               <img src="https://admin.aspiraskillhub.aspirasys.com/images/mdi_trash.png" alt="delete" />
             </div>
-            <p>Are you sure?</ p>
-            <span>To delete {tech[deleteIndex]?.techName || 'this technology'}?</span>
+            <p>Are you sure?</p>
+            <span>To delete {tech[deleteIndex]?.technology || 'this technology'}?</span>
             <div className="modal-footer delete">
               <Button onClick={() => setIsDeleteModalOpen(false)}>Cancel</Button>
               <Button onClick={handleDelete}>Delete</Button>
@@ -714,10 +787,10 @@ const AspirantTecnology = () => {
                     paginatedTechStacks.map((tech, index) => (
                       <tr className="odd" key={index}>
                         <td className="num">{(currentPage - 1) * 10 + index + 1}</td>
-                        <td>{tech.technology_id}</td>
+                        <td>{`ASPT${String(tech.technology_id).padStart(4, '0')}`}</td>
                         <td>{tech.technology}</td>
                         <td>{tech.no_stages}</td>
-                        <td>{tech.completion_percentage}%</td>
+                        <td>{tech.completion_percentage}</td>
                         <td className="stack-output">
                           <NavLink
                             to="/admin/aspirants-progress/stages"
@@ -725,6 +798,7 @@ const AspirantTecnology = () => {
                               techId: tech.technology_id,
                               techName: tech.technology,
                               studentId: studentId,
+                              userId: userId,
                             }}
                           >
                             <button>
@@ -757,7 +831,6 @@ const AspirantTecnology = () => {
           <div className="pagination">
             <Button
               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
               disabled={currentPage === 1}
             >
               Prev
@@ -770,7 +843,7 @@ const AspirantTecnology = () => {
                   padding: '8px 16px',
                   border: 'none',
                   borderRadius: '5px',
-                  backgroundColor: currentPage === i + 1 ? '#3282c4' : 'transparent', // Active color changed
+                  backgroundColor: currentPage === i + 1 ? '#3282c4' : 'transparent',
                   color: currentPage === i + 1 ? 'white' : '#3282c4',
                   cursor: 'pointer',
                   margin: '0 5px',
@@ -782,7 +855,6 @@ const AspirantTecnology = () => {
             ))}
             <Button
               onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pages))}
-              style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
               disabled={currentPage === pages}
             >
               Next

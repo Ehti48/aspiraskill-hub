@@ -183,13 +183,14 @@ const TechStage = () => {
     const techId = location.state?.techId;
     const studentId = location.state?.studentId;
     const techName = location.state?.techName;
+    const userId = location.state?.userId;
 
     // Fetch data from the API
     useEffect(() => {
         const fetchData = async () => {
             try {
                 const response = await axios.get(
-                    `http://localhost:48857/api/admin/aspirants-progress/stages/${techId}/${studentId}`
+                    `https://api.aspiraskillhub.aspirasys.com/api/admin/aspirants-progress/stages/${techId}/${userId}`
                 );
                 setStages(response.data);
                 setLoading(false);
@@ -229,7 +230,7 @@ const TechStage = () => {
                         </li>
                         <MdKeyboardArrowRight />
                         <li className="breadcrumb-item active" aria-current="page">
-                            {techId}
+                            {studentId}
                         </li>
                     </ol>
                 </nav>
@@ -270,6 +271,7 @@ const TechStage = () => {
                                             studentId: studentId,
                                             stageId: stage.stage_id,
                                             technologyId: techId,
+                                            userId: userId,
                                         }}
                                     >
                                         <Button>

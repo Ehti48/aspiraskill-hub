@@ -24,15 +24,15 @@ export const routes = [
         element: <Dashboard />,
     },
     {
-        path: '/admin/my-learnings',
+        path: '/admin/technologies',
         element: <MyLearnings />,
     },
     {
-        path: '/admin/my-learnings/detail/:id',
+        path: '/admin/technologies/stages/:id',
         element: <Detail />,
     },
     {
-        path: '/admin/my-learnings/detail/:id/material',
+        path: '/admin/technologies/stages/view/:id',
         element: <Material />,
     },
     {
@@ -40,15 +40,15 @@ export const routes = [
         element: <AspirantsProg />,
     },
     {
-        path: '/admin/aspirants-progress/productive-students',
+        path: '/admin/aspirants-progress/:user_id/productive-students',
         element: <ProductiveStudents />,
     },
     {
-        path: '/admin/aspirants-progress/timesheet-detail',
+        path: '/admin/aspirants-progress/timesheet-detail/:user_id',
         element: <TimesheetDetail />,
     },
     {
-        path: '/admin/aspirants-progress/aspirant-tech',
+        path: '/admin/aspirants-progress/aspirants-technology/:user_id',
         element: <AspirantTechnology />,
     },
     {

@@ -395,7 +395,7 @@ const MyLearnings = () => {
         }));
       }, 300);
 
-      const response = await axios.get('http://localhost:3000/admin/technologies');
+      const response = await axios.get('https://api.aspiraskillhub.aspirasys.com/admin/technologies');
       const data = response.data || [];
 
       // Calculate remaining minimum loading time
@@ -456,8 +456,8 @@ const MyLearnings = () => {
   const handleSaveTechStack = useCallback(async (newTechStack) => {
     try {
       const response = newTechStack.id
-        ? await axios.put(`http://localhost:3000/admin/technologies/update/${newTechStack.id}`, newTechStack)
-        : await axios.post('http://localhost:3000/admin/technologies/create', newTechStack);
+        ? await axios.put(`https://api.aspiraskillhub.aspirasys.com/admin/technologies/update/${newTechStack.id}`, newTechStack)
+        : await axios.post('https://api.aspiraskillhub.aspirasys.com/admin/technologies/create', newTechStack);
 
       setState(prev => {
         const exists = prev.techStacks.some(stack => stack.id === response.data.id);
@@ -478,11 +478,13 @@ const MyLearnings = () => {
         console.error('Server response:', error.response.data);
       }
     }
+    setState(prev => ({ ...prev, isLoading: true }));
+    fetchTechStacks();
   }, []);
 
   const handleDeleteTechStack = useCallback(async () => {
     try {
-      await axios.delete(`http://localhost:3000/admin/technologies/delete/${state.techStackToDelete.id}`);
+      await axios.delete(`https://api.aspiraskillhub.aspirasys.com/admin/technologies/delete/${state.techStackToDelete.id}`);
       setState(prev => ({
         ...prev,
         techStacks: prev.techStacks.filter(stack => stack.id !== prev.techStackToDelete.id),
@@ -619,11 +621,11 @@ const MyLearnings = () => {
                       </td>
                       <td className="stack-output">
                         <NavLink
-                          to={`/admin/my-learnings/detail/${techStack.technolgy_id.slice(-2)}`}
+                          to={`/admin/technologies/stages/${techStack.technolgy_id.slice(-1)}`}
                           state={{
                             techStackName: techStack.name,
-                            techStackId: techStack.id,
-                            techStackStages: techStack.stages
+                            techStackId: techStack.technolgy_id,
+                            techStackStages: techStack.no_stages
                           }}
                         >
                           <button>

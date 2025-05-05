@@ -370,7 +370,7 @@ const DashboardLayout = ({ onLogout}) => {
 
   useEffect(() => {
     const headerMap = {
-      "/admin/my-learnings": "My Learnings",
+      "/admin/technologies": "My Learnings",
       "/admin/aspirants-progress": "Aspirants Progress",
       "/admin/new-registration": "New Registration",
       "/admin/events-info": "Events & Info",
@@ -445,7 +445,7 @@ const DashboardLayout = ({ onLogout}) => {
                 <span>Dashboard</span>
               </NavLink>
               <NavLink
-                to="/admin/my-learnings"
+                to="/admin/technologies"
                 className="list-item"
                 activeClassName="active"
                 onClick={() => {

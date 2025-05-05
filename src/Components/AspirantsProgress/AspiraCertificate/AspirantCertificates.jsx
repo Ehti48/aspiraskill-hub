@@ -274,6 +274,7 @@ const Wrapper = styled.section`
   border-radius: 8px;
   width: 90%;
   max-width: 700px;
+  max-height: 80%;
   position: relative;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   display: flex;
@@ -490,7 +491,7 @@ const AspirantCertificates = () => {
     const fetchCertificates = async () => {
       try {
         const response = await fetch(
-          `http://localhost:3000/admin/aspirants-certificates/view/${studentId}`
+          `https://api.aspiraskillhub.aspirasys.com/admin/aspirants-certificates/view/${studentId}`
         );
         if (!response.ok) throw new Error("Error fetching certificates");
         const data = await response.json();
@@ -562,8 +563,8 @@ const AspirantCertificates = () => {
   const handleAddOrUpdate = async () => {
     try {
       const url = editMode
-        ? `http://localhost:3000/admin/aspirants-certificates/update/${selectedCertificate.id}`
-        : "http://localhost:3000/admin/aspirants-certificates/create";
+        ? `https://api.aspiraskillhub.aspirasys.com/admin/aspirants-certificates/update/${selectedCertificate.id}`
+        : "https://api.aspiraskillhub.aspirasys.com/admin/aspirants-certificates/create";
       const method = editMode ? "PUT" : "POST";
   
       // Ensure all required fields are included and formatted correctly
@@ -615,7 +616,7 @@ const AspirantCertificates = () => {
   
     try {
       const response = await fetch(
-        `http://localhost:3000/admin/aspirants-certificates/delete/${selectedCertificate.id}`, 
+        `https://api.aspiraskillhub.aspirasys.com/admin/aspirants-certificates/delete/${selectedCertificate.id}`, 
         {
           method: "DELETE",
           headers: {

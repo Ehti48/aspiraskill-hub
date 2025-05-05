@@ -11,12 +11,15 @@ const Wrapper = styled.section`
     width: 95%;
     min-height: 78vh;
     margin: 2% auto;
+    padding: 20px;
   }
 
   .breadCrumb {
     font-size: 16px;
     display: flex;
     align-items: center;
+    padding: 0 30px;
+    margin: 20px 0;
 
     svg {
         font-size: 30px;
@@ -36,6 +39,7 @@ const Wrapper = styled.section`
     justify-content: space-between;
     align-items: center;
     gap: 10px;
+    padding: 0 30px;
 
     .heading {
       width: 250px;
@@ -53,6 +57,7 @@ const Wrapper = styled.section`
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
+    padding: 0 30px;
   }
 
     .stage {
@@ -68,7 +73,8 @@ const Wrapper = styled.section`
 
     img {
       width: 100%;
-      height: 140px;
+      min-height: 120px;
+      max-height: 120px;
       object-fit: cover;
     }
 
@@ -408,6 +414,8 @@ const Detail = () => {
     loadProgress: 0
   });
 
+  console.log("stateId:" ,techStackId );
+
   // Fetch stages with extended loader
   const fetchStages = useCallback(async () => {
     const MIN_LOADING_TIME = 2000; // Minimum 2 seconds loading time
@@ -423,13 +431,15 @@ const Detail = () => {
         }));
       }, 300);
 
-      const response = await fetch(`http://localhost:3000/admin/technology_stages/${techStackId}`);
+      const response = await fetch(`https://api.aspiraskillhub.aspirasys.com/admin/technology_stages/${techStackId.slice(-1)}`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch stages: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
+
+      
 
       // Calculate remaining minimum loading time
       const elapsed = Date.now() - startTime;
@@ -502,7 +512,7 @@ const Detail = () => {
     }
 
     const payload = {
-      technology_id: techStackId,
+      technology_id: techStackId.slice(-1),
       name: state.name,
       image: state.img || null,
       sort: state.sortValue,
@@ -510,7 +520,7 @@ const Detail = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:3000/admin/technology_stages/create",
+        "https://api.aspiraskillhub.aspirasys.com/admin/technology_stages/create",
         payload,
         { headers: { "Content-Type": "application/json" } }
       );
@@ -546,13 +556,13 @@ const Detail = () => {
   const updateStage = useCallback(async () => {
     try {
       const payload = {
-        technology_id: techStackId,
+        technology_id: techStackId.slice(-1),
         name: state.name,
         sort: Number(state.sortValue),
         image: state.img || null,
       };
 
-      const res = await fetch(`http://localhost:3000/admin/technology_stages/update/${state.currentStageId}`, {
+      const res = await fetch(`https://api.aspiraskillhub.aspirasys.com/admin/technology_stages/update/${state.currentStageId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -597,7 +607,7 @@ const Detail = () => {
 
   const confirmDelete = useCallback(async () => {
     try {
-      const res = await fetch(`http://localhost:3000/admin/technology_stages/delete/${state.deleteId}`, { 
+      const res = await fetch(`https://api.aspiraskillhub.aspirasys.com/admin/technology_stages/delete/${state.deleteId}`, { 
         method: "DELETE" 
       });
 
@@ -633,13 +643,11 @@ const Detail = () => {
       
       <Wrapper>
         <div className="breadCrumb">
-          <Link to="/admin/my-learnings">My Learnings</Link> 
+          <Link to="/admin/technologies">My Learnings</Link> 
           <MdKeyboardArrowRight /> 
           <span onClick={() => window.history.back()}>
             {techStackName || "Unknown"}
           </span>
-          <MdKeyboardArrowRight />
-          <p>{id || "Unknown"}</p>
         </div>
         
         <div className="title">
@@ -663,7 +671,7 @@ const Detail = () => {
                 <div className="btn-cont">
                   <span>
                     <NavLink
-                      to={`/admin/my-learnings/detail/${id}/material`}
+                      to={`/admin/technologies/stages/view/${id}`}
                       state={{ 
                         stageTitle: stage.name, 
                         stageId: stage.id, 

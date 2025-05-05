@@ -78,6 +78,10 @@ const Wrapper = styled.section`
       padding: 10px;
       font-size: 14px;
 
+      span {
+        font-size: 10px;
+      }
+
       #action-icons {
         width: auto;
         height: auto;
@@ -638,7 +642,7 @@ const Material = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { techId, stageId, stageTitle, techStackName } = location.state || {};
-
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "ascending" });
   // Fetch materials with extended loader
   const fetchMaterials = useCallback(async () => {
     const MIN_LOADING_TIME = 2000; // Minimum 2 seconds loading time
@@ -655,7 +659,7 @@ const Material = () => {
       }, 300);
 
       const response = await axios.get(
-        `http://localhost:3000/admin/technology_stages/${techId}/${stageTitle}`
+        `https://api.aspiraskillhub.aspirasys.com/admin/technology_stages/${techId}/${stageTitle}`
       );
 
       // Calculate remaining minimum loading time
@@ -710,7 +714,7 @@ const Material = () => {
   const handleDeleteMaterial = useCallback(async () => {
     try {
       await axios.delete(
-        `http://localhost:3000/admin/technology_stages/${techId}/${stageTitle}/delete/${state.materialToDelete.id}`
+        `https://api.aspiraskillhub.aspirasys.com/admin/technology_stages/${techId}/${stageTitle}/delete/${state.materialToDelete.id}`
       );
       setState(prev => ({
         ...prev,
@@ -752,7 +756,7 @@ const Material = () => {
   const renderBreadcrumb = useCallback(() => {
     return (
       <div className="breadcrumb">
-        <Link to="/admin/my-learnings">My Learnings</Link>
+        <Link to="/admin/technologies">My Learnings</Link>
         <span> <MdKeyboardArrowRight /> </span>
         <Link onClick={() => navigate(-1)}>
           {techStackName || "Tech Stack"}
@@ -762,6 +766,23 @@ const Material = () => {
       </div>
     );
   }, [navigate, techStackName, stageTitle]);
+
+  const handleSort = (key) => {
+    let direction = "ascending";
+    if (sortConfig.key === key && sortConfig.direction === "ascending") {
+      direction = "descending";
+    }
+    setSortConfig({ key, direction });
+
+    setState(prev => {
+      const sortedMaterials = [...prev.materials].sort((a, b) => {
+        if (a[key] < b[key]) return direction === "ascending" ? -1 : 1;
+        if (a[key] > b[key]) return direction === "ascending" ? 1 : -1;
+        return 0;
+      });
+      return { ...prev, materials: sortedMaterials };
+    });
+  };
 
   return (
     <>
@@ -858,10 +879,18 @@ const Material = () => {
               <thead>
                 <tr className="odd odd1">
                   <td>#</td>
-                  <td>Type</td>
-                  <td>Technology Name</td>
-                  <td>Video Link</td>
-                  <td>Learning Link</td>
+                  <td onClick={() => handleSort("type")} style={{ cursor: "pointer" }}>
+                    Type <span>{sortConfig.key === "type" && (sortConfig.direction === "ascending" ? "▲" : "▼")}</span>
+                  </td>
+                  <td onClick={() => handleSort("name")} style={{ cursor: "pointer" }}>
+                    Technology Name <span>{sortConfig.key === "name" && (sortConfig.direction === "ascending" ? "▲" : "▼")}</span>
+                  </td>
+                  <td onClick={() => handleSort("referal_link_1")} style={{ cursor: "pointer" }}>
+                    Video Link <span>{sortConfig.key === "referal_link_1" && (sortConfig.direction === "ascending" ? "▲" : "▼")}</span>
+                  </td>
+                  <td onClick={() => handleSort("referal_link_2")} style={{ cursor: "pointer" }}>
+                    Learning Link <span> {sortConfig.key === "referal_link_2" && (sortConfig.direction === "ascending" ? "▲" : "▼")} </span>
+                  </td>
                   <td>Thumbnail</td>
                   <td>Action</td>
                 </tr>
@@ -871,7 +900,7 @@ const Material = () => {
                   state.materials.map((material, index) => (
                     <tr className="odd" key={material.id}>
                       <td>{(state.currentPage - 1) * 10 + index + 1}</td>
-                      <td>{material.type || "-"}</td>
+                      <td>{material.type === "1" ? "Material" : "Project" || "-"}</td>
                       <td className="cut-text">{material.name}</td>
                       <td className="cut-text">{material.referal_link_1 || "-"}</td>
                       <td className="cut-text">{material.referal_link_2 || "-"}</td>
@@ -937,10 +966,26 @@ const ModalForm = ({ material, setMaterial, stageId, stageTitle, techId, onSave,
     concept: "",
   });
 
+  const [conceptOptions, setConceptOptions] = useState([]);
+
+  useEffect(() => {
+    
+    axios
+      .get(`https://api.aspiraskillhub.aspirasys.com/admin/technology_stages/${techId}/${stageTitle}`)
+      .then((res) => {
+        setConceptOptions(res.data); // adjust based on actual API shape
+      })
+      .catch((err) => {
+        console.error("Error fetching concepts", err);
+      });
+    
+  }, []);
+
+
   useEffect(() => {
     const languageMap = {
-      1: "English",
-      2: "Hindi",
+      1: "Hindi",
+      2: "English",
       3: "Tamil",
     };
 
@@ -1012,8 +1057,8 @@ const ModalForm = ({ material, setMaterial, stageId, stageTitle, techId, onSave,
     e.preventDefault();
 
     const languageIdMap = {
-      English: 1,
-      Hindi: 2,
+      Hindi: 1,
+      English: 2,
       Tamil: 3,
     };
 
@@ -1030,8 +1075,8 @@ const ModalForm = ({ material, setMaterial, stageId, stageTitle, techId, onSave,
     const isUpdating = !!material;
     const method = isUpdating ? "PUT" : "POST";
     const url = isUpdating
-      ? `http://localhost:3000/admin/technology_stages/${stageTitle}/${techId}/update/${material.id}`
-      : `http://localhost:3000/admin/technology_stages/${stageTitle}/${techId}/create`;
+      ? `https://api.aspiraskillhub.aspirasys.com/admin/technology_stages/${stageTitle}/${techId}/update/${material.id}`
+      : `https://api.aspiraskillhub.aspirasys.com/admin/technology_stages/${stageTitle}/${techId}/create`;
 
     const payload = {
       type: typeIdMap[formData.type] || "",
@@ -1063,7 +1108,7 @@ const ModalForm = ({ material, setMaterial, stageId, stageTitle, techId, onSave,
 
         // Fetch updated materials list
         const updatedMaterials = await fetch(`
-          http://localhost:3000/admin/technology_stages/${techId}/${stageTitle}`
+          https://api.aspiraskillhub.aspirasys.com/admin/technology_stages/${techId}/${stageTitle}`
         ).then(res => res.json());
 
         console.log("Updated Materials:", updatedMaterials);
@@ -1193,16 +1238,18 @@ const ModalForm = ({ material, setMaterial, stageId, stageTitle, techId, onSave,
                 <Label htmlFor="concept">Where to place this</Label>
                 <Select
                   name="concept"
-                  value={formData.concept}
+                  value={formData.name}
                   onChange={handleChange}
-                // required
                 >
-                  <option value="">Select After</option>
-                  <option value="Concept-1">Concept-1</option>
-                  <option value="Concept-2">Concept-2</option>
-                  <option value="Concept-3">Concept-3</option>
+                  {/* <option value="">Select After</option> */}
+                  {conceptOptions.map((item) => (
+                    <option key={item.id} value={item.name}>
+                      {item.name}
+                    </option>
+                  ))}
                 </Select>
               </div>
+
             </div>
           </div>
 

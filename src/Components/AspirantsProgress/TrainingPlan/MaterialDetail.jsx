@@ -400,13 +400,14 @@ const MaterialDetail = () => {
   const studentId = location.state?.studentId;
   const technologyId = location.state?.technologyId;
   const stageId = location.state?.stageId;
+  const userId = location.state?.userId;
 
   // Fetch data from the API
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:48857/api/admin/aspirant/1/trainingplan/1/${stageId}`
+        `https://api.aspiraskillhub.aspirasys.com/api/admin/aspirant/${userId}/trainingplan/${technologyId}/${stageId}`
         );
         setMaterials(response.data.materials);
         setLoading(false);

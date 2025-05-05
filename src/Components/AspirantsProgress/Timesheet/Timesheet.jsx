@@ -4,6 +4,7 @@ import { NavLink } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import Heading from '../../Heading';
 import Button from '../../Button';
+import ProgressLoader from '../../ProgressLoader';
 
 const Wrapper = styled.section`
   .dateSec {
@@ -247,19 +248,64 @@ const Wrapper = styled.section`
   .breadcrumb a:hover {
     text-decoration: underline;
   }
+.pagination-controls {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+}
 
-  .pagination {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 10px;
-  }
+.page-button {
+  border: 1px solid #ccc;
+  background-color: white;
+  color: black;
+  margin: 0 4px;
+  transition: all 0.3s ease;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.page-button:hover {
+  background-color: #1976d2;
+  color: white;
+  border-color: #1976d2;
+}
+.page-button.active {
+  background-color: #1976d2;
+  color: white;
+  border-color: #1976d2;
+}
+
+.pagination-ellipsis {
+  margin: 0 8px;
+  font-size: 20px;
+}
+
 
   @media screen and (max-width: 500px) {
     .header {
       margin: 10px auto;
       align-items: start;
       flex-direction: column;
+    }
+
+    .pagination-controls {
+      gap: 5px;
+
+    button {
+      padding: 5px 12px;
+      font-size: 12px;
+    }
+    }
+  }
+
+  @media screen and (max-width: 375px) {
+    .pagination-controls {
+      button {
+        padding: 5px 10px;
+        font-size: 10px;
+      }
     }
   }
 `;
@@ -273,105 +319,77 @@ const IMAGES = {
   export: "https://admin.aspiraskillhub.aspirasys.com/images/export-pro.png"
 };
 
-// Loading animation
-const spin = keyframes`
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-`;
-
-const LoadingOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(255, 255, 255, 0.9);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  transition: opacity 0.3s ease-out;
-`;
-
-const Spinner = styled.div`
-  width: 50px;
-  height: 50px;
-  border: 5px solid #f3f3f3;
-  border-top: 5px solid #3498db;
-  border-radius: 50%;
-  animation: ${spin} 1.5s linear infinite; /* Slower spin */
-`;
-
-const LoadingText = styled.p`
-  margin-top: 20px;
-  font-size: 1.2rem;
-  color: #333;
-  font-weight: 500;
-`;
-
-const ProgressBar = styled.div`
-  width: 200px;
-  height: 8px;
-  background-color: #f3f3f3;
-  border-radius: 4px;
-  margin-top: 15px;
-  overflow: hidden;
-`;
-
-const Progress = styled.div`
-  height: 100%;
-  width: ${props => props.progress}%;
-  background-color: #3498db;
-  transition: width 0.3s ease;
-`;
-
 const Timesheet = () => {
   const [state, setState] = useState({
     students: [],
-    searchQuery: '',
+    filters: {
+      searchQuery: '',
+      dateFrom: '',
+      dateTo: '',
+      selectedMonth: '',
+      selectedCategory: '',
+      selectedGender: ''
+    },
+    appliedFilters: {
+      searchQuery: '',
+      dateFrom: '',
+      dateTo: '',
+      selectedMonth: '',
+      selectedCategory: '',
+      selectedGender: ''
+    },
     currentPage: 1,
-    dateFrom: '',
-    dateTo: '',
-    selectedMonth: '',
-    selectedCategory: '',
-    selectedGender: '',
     isLoading: true,
-    loadProgress: 0
+    loadProgress: 0,
+    userIds: []
   });
+
+
+
+  // Helper function to format last updated hours
+  const formatLastUpdated = (hours) => {
+    const absHours = Math.abs(hours);
+
+    // Show days when hours >= 24
+    if (absHours >= 24) {
+      const days = Math.floor(absHours / 24); // Round to nearest day
+      if (hours > 0) return `${days} day${days !== 1 ? 's' : ''} ago`;
+      return `In ${days} day${days !== 1 ? 's' : ''}`;
+    }
+
+    // Original handling for less than 24 hours
+    if (hours === 0) return "Just now";
+    if (hours > 0) return `${absHours} hour${absHours !== 1 ? 's' : ''} ago`;
+    return `In ${absHours} hour${absHours !== 1 ? 's' : ''}`;
+  };
 
   // Memoized filtered students
   const filteredStudents = useMemo(() => {
     return state.students.filter(student => {
-      const matchesSearch = 
-        student.full_name?.toLowerCase().includes(state.searchQuery.toLowerCase()) ||
-        student.technology_id?.toLowerCase().includes(state.searchQuery.toLowerCase()) ||
-        student.aspirant_id?.toString().includes(state.searchQuery);
+      const { searchQuery, dateFrom, dateTo, selectedMonth, selectedCategory, selectedGender } = state.appliedFilters;
+
+      const matchesSearch =
+        student.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        student.technology_id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        student.aspirant_id?.toString().includes(searchQuery);
 
       const matchesDateRange =
-        (!state.dateFrom || new Date(student.date) >= new Date(state.dateFrom)) &&
-        (!state.dateTo || new Date(student.date) <= new Date(state.dateTo));
+        (!dateFrom || new Date(student.date) >= new Date(dateFrom)) &&
+        (!dateTo || new Date(student.date) <= new Date(dateTo));
 
-      const matchesMonth = 
-        !state.selectedMonth || student.date?.split('-')[1] === state.selectedMonth;
+      const matchesMonth =
+        !selectedMonth || student.date?.split('-')[1] === selectedMonth;
 
-      const matchesCategory = 
-        !state.selectedCategory || student.technology_id === state.selectedCategory;
+      const matchesCategory =
+        !selectedCategory || student.technology === selectedCategory;
 
-      const matchesGender = 
-        !state.selectedGender || student.gender?.toLowerCase() === state.selectedGender.toLowerCase();
+      const matchesGender =
+        !selectedGender || student.gender?.toLowerCase() === selectedGender.toLowerCase();
 
       return matchesSearch && matchesDateRange && matchesMonth && matchesCategory && matchesGender;
     });
-  }, [
-    state.students, 
-    state.searchQuery, 
-    state.dateFrom, 
-    state.dateTo, 
-    state.selectedMonth, 
-    state.selectedCategory,
-    state.selectedGender
-  ]);
+  }, [state.students, state.appliedFilters]);
+
 
   // Pagination data
   const paginationData = useMemo(() => {
@@ -379,29 +397,28 @@ const Timesheet = () => {
     const start = (state.currentPage - 1) * 10;
     const end = start + 10;
     const paginatedStudents = filteredStudents.slice(start, end);
-    
+
     return { pages, paginatedStudents };
   }, [filteredStudents, state.currentPage]);
 
   // Fetch students with extended loader
   const fetchTimesheets = useCallback(async () => {
-    const MIN_LOADING_TIME = 2000; // Minimum 2 seconds loading time
+    const MIN_LOADING_TIME = 2000;
     const startTime = Date.now();
     let progressInterval;
 
     try {
-      // Start progress simulation
       progressInterval = setInterval(() => {
         setState(prev => ({
           ...prev,
-          loadProgress: Math.min(prev.loadProgress + 10, 90) // Stop at 90% until load completes
+          loadProgress: Math.min(prev.loadProgress + 10, 90)
         }));
       }, 300);
 
-      const response = await axios.get('http://localhost:48857/api/admin/aspirants-progress');
-      const data = response.data || [];
+      const aspirantsProgressRes = await axios.get('https://api.aspiraskillhub.aspirasys.com/api/admin/aspirants-progress');
 
-      // Calculate remaining minimum loading time
+      const aspirantsData = Array.isArray(aspirantsProgressRes.data) ? aspirantsProgressRes.data : [];
+
       const elapsed = Date.now() - startTime;
       const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsed);
 
@@ -409,13 +426,19 @@ const Timesheet = () => {
         clearInterval(progressInterval);
         setState(prev => ({
           ...prev,
-          students: data,
+          students: aspirantsData,
           loadProgress: 100,
           isLoading: false
         }));
       }, remainingTime);
+
     } catch (error) {
-      console.error('Error fetching students:', error.message);
+      console.error('Fetch error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+
       const elapsed = Date.now() - startTime;
       const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsed);
 
@@ -439,43 +462,106 @@ const Timesheet = () => {
     fetchTimesheets();
   }, [fetchTimesheets]);
 
-  // Event handlers
+  const applyFilters = useCallback((filterKey) => {
+    setState(prev => ({
+      ...prev,
+      appliedFilters: {
+        ...prev.appliedFilters,
+        [filterKey]: prev.filters[filterKey]
+      },
+      currentPage: 1
+    }));
+  }, []);
+
   const handleSearchChange = useCallback((e) => {
-    setState(prev => ({ ...prev, searchQuery: e.target.value, currentPage: 1 }));
+    const value = e.target.value;
+    setState(prev => ({
+      ...prev,
+      filters: {
+        ...prev.filters,
+        searchQuery: value
+      }
+    }));
   }, []);
 
   const handleDateFromChange = useCallback((e) => {
-    setState(prev => ({ ...prev, dateFrom: e.target.value }));
+    const value = e.target.value;
+    setState(prev => ({
+      ...prev,
+      filters: {
+        ...prev.filters,
+        dateFrom: value
+      }
+    }));
   }, []);
 
   const handleDateToChange = useCallback((e) => {
-    setState(prev => ({ ...prev, dateTo: e.target.value }));
+    const value = e.target.value;
+    setState(prev => ({
+      ...prev,
+      filters: {
+        ...prev.filters,
+        dateTo: value
+      }
+    }));
   }, []);
 
   const handleMonthChange = useCallback((e) => {
-    setState(prev => ({ ...prev, selectedMonth: e.target.value }));
+    const value = e.target.value;
+    setState(prev => ({
+      ...prev,
+      filters: {
+        ...prev.filters,
+        selectedMonth: value
+      }
+    }));
   }, []);
 
   const handleCategoryChange = useCallback((e) => {
-    setState(prev => ({ ...prev, selectedCategory: e.target.value }));
+    const value = e.target.value;
+    setState(prev => ({
+      ...prev,
+      filters: {
+        ...prev.filters,
+        selectedCategory: value
+      }
+    }));
   }, []);
 
   const handleGenderChange = useCallback((e) => {
-    setState(prev => ({ ...prev, selectedGender: e.target.value }));
+    const value = e.target.value;
+    setState(prev => ({
+      ...prev,
+      filters: {
+        ...prev.filters,
+        selectedGender: value
+      }
+    }));
   }, []);
 
   const handleReset = useCallback(() => {
     setState(prev => ({
       ...prev,
-      searchQuery: '',
-      dateFrom: '',
-      dateTo: '',
-      selectedMonth: '',
-      selectedCategory: '',
-      selectedGender: '',
+      filters: {
+        searchQuery: '',
+        dateFrom: '',
+        dateTo: '',
+        selectedMonth: '',
+        selectedCategory: '',
+        selectedGender: ''
+      },
+      appliedFilters: {
+        searchQuery: '',
+        dateFrom: '',
+        dateTo: '',
+        selectedMonth: '',
+        selectedCategory: '',
+        selectedGender: ''
+      },
       currentPage: 1
     }));
   }, []);
+
 
   const handlePageChange = useCallback((page) => {
     setState(prev => ({ ...prev, currentPage: page }));
@@ -484,13 +570,7 @@ const Timesheet = () => {
   return (
     <>
       {state.isLoading && (
-        <LoadingOverlay>
-          <Spinner />
-          <LoadingText>Loading Timesheet Data...</LoadingText>
-          <ProgressBar>
-            <Progress progress={state.loadProgress} />
-          </ProgressBar>
-        </LoadingOverlay>
+        <ProgressLoader progress={state.loadProgress} />
       )}
 
       <Wrapper>
@@ -503,7 +583,7 @@ const Timesheet = () => {
                   type="date"
                   name="from"
                   id="date-from"
-                  value={state.dateFrom}
+                  value={state.filters.dateFrom}
                   onChange={handleDateFromChange}
                 />
                 <div className="date-icon">
@@ -516,31 +596,42 @@ const Timesheet = () => {
                   type="date"
                   name="to"
                   id="date-to"
-                  value={state.dateTo}
+                  value={state.filters.dateTo}
                   onChange={handleDateToChange}
                 />
                 <div className="date-icon">
                   <img src={IMAGES.calendar} alt="Calendar" />
                 </div>
               </div>
+              <div className="src-button">
+                <button
+                  type="button"
+                  className="search-button"
+                  onClick={() => {
+                    applyFilters('dateFrom');
+                    applyFilters('dateTo');
+                  }}
+                >
+                  <img src={IMAGES.search} alt="Search" />
+                </button>
+              </div>
             </div>
-
             <div className="date-section">
               <div className="date-form">
                 <label htmlFor="month">Month</label>
                 <select
                   name="month"
                   id="month"
-                  value={state.selectedMonth}
+                  value={state.filters.selectedMonth}
                   onChange={handleMonthChange}
                 >
                   <option value="">MM</option>
                   {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map(
                     (month, index) => (
-                    <option value={(index + 1).toString().padStart(2, '0')} key={index}>
-                      {month}
-                    </option>
-                  ))}
+                      <option value={(index + 1).toString().padStart(2, '0')} key={index}>
+                        {month}
+                      </option>
+                    ))}
                 </select>
               </div>
               <div className="date-form">
@@ -548,7 +639,7 @@ const Timesheet = () => {
                 <select
                   name="category"
                   id="category"
-                  value={state.selectedCategory}
+                  value={state.filters.selectedCategory}
                   onChange={handleCategoryChange}
                 >
                   <option value="">Select Category</option>
@@ -570,21 +661,42 @@ const Timesheet = () => {
                   ))}
                 </select>
               </div>
+              <div className="src-button">
+                <button
+                  type="button"
+                  className="search-button"
+                  onClick={() => {
+                    applyFilters('selectedMonth');
+                    applyFilters('selectedCategory');
+                  }}
+                >
+                  <img src={IMAGES.search} alt="Search" />
+                </button>
+              </div>
             </div>
 
             <div className="date-section">
               <div className="date-form">
                 <label htmlFor="gender">Gender</label>
-                <select 
-                  name="gender" 
-                  id="gender" 
-                  value={state.selectedGender}
+                <select
+                  name="gender"
+                  id="gender"
+                  value={state.filters.selectedGender}
                   onChange={handleGenderChange}
                 >
                   <option value="">Select Gender</option>
                   <option value="male">Male</option>
                   <option value="female">Female</option>
                 </select>
+              </div>
+              <div className="src-button">
+                <button
+                  type="button"
+                  className="search-button"
+                  onClick={() => applyFilters('selectedGender')}
+                >
+                  <img src={IMAGES.search} alt="Search" />
+                </button>
               </div>
               <div className="src-button">
                 <button type="button" className="reset-button" onClick={handleReset}>
@@ -627,47 +739,54 @@ const Timesheet = () => {
                 </thead>
                 <tbody>
                   {filteredStudents.length > 0 ? (
-                    paginationData.paginatedStudents.map((student, index) => (
-                      <tr className="odd" key={`${student.aspirant_id}-${index}`}>
-                        <td>{(state.currentPage - 1) * 10 + index + 1}</td>
-                        <td>{student.aspirant_id}</td>
-                        <td>{student.full_name}</td>
-                        <td>{student.technology}</td>
-                        <td>{student.mode}</td>
-                        <td className='cut-text'>{student.last_status}</td>
-                        <td className="stack-output">
-                          <NavLink
-                            to='/admin/aspirants-progress/timesheet-detail'
-                            state={{ 
-                              studentId: student.aspirant_id, 
-                              studentName: student.full_name 
-                            }}
-                          >
-                            <button>
-                              <img src={IMAGES.eye} alt="View details" />
-                            </button>
-                          </NavLink>
-                          <NavLink
-                            to='/admin/aspirants-progress/productive-students'
-                            state={{ 
-                              studentId: student.aspirant_id, 
-                              studentName: student.full_name 
-                            }}
-                          >
-                            <button className="btn re-submit">
-                              <span>
-                                <img src={IMAGES.export} alt="Export productivity data" />
-                              </span>
-                            </button>
-                          </NavLink>
-                        </td>
-                      </tr>
-                    ))
+                    paginationData.paginatedStudents.map((student, index) => {
+                      return (
+                        <tr className="odd" key={`${student.aspirant_id}-${index}`}>
+                          <td>{(state.currentPage - 1) * 10 + index + 1}</td>
+                          <td>{student.aspirant_id}</td>
+                          <td>{student.full_name}</td>
+                          <td>{student.technology}</td>
+                          <td>{student.mode}</td>
+                          <td className='cut-text'>
+                            {formatLastUpdated(student.last_updated_hours)}
+                          </td>
+                          <td className="stack-output">
+                            <NavLink
+                              to={`/admin/aspirants-progress/timesheet-detail/${student.user_id}`}
+                              state={{
+                                aspirantId: student.aspirant_id,
+                                userId: student.user_id,
+                                studentName: student.full_name
+                              }}
+                            >
+                              <button>
+                                <img src={IMAGES.eye} alt="View details" />
+                              </button>
+                            </NavLink>
+
+                            <NavLink
+                              to={`/admin/aspirants-progress/${student.user_id}/productive-students`}
+                              state={{
+                                studentId: student.aspirant_id,
+                                studentName: student.full_name,
+                                userId: student.user_id
+                              }}
+                            >
+                              <button className="btn re-submit">
+                                <span>
+                                  <img src={IMAGES.export} alt="Export productivity data" />
+                                </span>
+                              </button>
+                            </NavLink>
+                          </td>
+                        </tr>
+                      );
+                    })
                   ) : (
                     <tr className='odd odd2'>
                       <td colSpan="7" className="no-data">
-                        {state.searchQuery || state.dateFrom || state.dateTo || 
-                         state.selectedMonth || state.selectedCategory || state.selectedGender
+                        {state.searchQuery || state.dateFrom || state.dateTo ||
+                          state.selectedMonth || state.selectedCategory || state.selectedGender
                           ? "No matching records found"
                           : "No data available"}
                       </td>
@@ -679,28 +798,57 @@ const Timesheet = () => {
           </div>
         </div>
         {filteredStudents.length > 10 && (
-          <div className="pagination">
-            <Button
-              onClick={() => handlePageChange(Math.max(state.currentPage - 1, 1))}
-              disabled={state.currentPage === 1}
-            >
-              Prev
-            </Button>
-            {[...Array(paginationData.pages)].map((_, i) => (
+          <div className="pagination-controls">
+            {state.currentPage > 1 && (
               <button
-                key={i + 1}
-                onClick={() => handlePageChange(i + 1)}
-                className={state.currentPage === i + 1 ? 'active' : ''}
+                className="page-button"
+                onClick={() => handlePageChange(state.currentPage - 1)}
               >
-                {i + 1}
+                Prev
               </button>
-            ))}
-            <Button
-              onClick={() => handlePageChange(Math.min(state.currentPage + 1, paginationData.pages))}
-              disabled={state.currentPage === paginationData.pages}
-            >
-              Next
-            </Button>
+            )}
+
+            {/* Show Pages */}
+            {Array.from({ length: paginationData.pages }, (_, index) => index + 1)
+              .filter(page => {
+                if (paginationData.pages <= 5) {
+                  return true; // Show all if total pages <= 5
+                }
+                if (state.currentPage <= 3) {
+                  return page <= 4 || page === paginationData.pages;
+                }
+                if (state.currentPage >= paginationData.pages - 2) {
+                  return page >= paginationData.pages - 3 || page === 1;
+                }
+                return (
+                  page === 1 ||
+                  page === paginationData.pages ||
+                  (page >= state.currentPage - 1 && page <= state.currentPage + 1)
+                );
+              })
+              .map((page, idx, arr) => (
+                <React.Fragment key={page}>
+                  {idx > 0 &&
+                    page - arr[idx - 1] > 1 && (
+                      <span className="pagination-ellipsis">...</span>
+                    )}
+                  <button
+                    className={`page-button ${state.currentPage === page ? "active" : ""}`}
+                    onClick={() => handlePageChange(page)}
+                  >
+                    {page}
+                  </button>
+                </React.Fragment>
+              ))}
+
+            {state.currentPage < paginationData.pages && (
+              <button
+                className="page-button"
+                onClick={() => handlePageChange(state.currentPage + 1)}
+              >
+                Next
+              </button>
+            )}
           </div>
         )}
       </Wrapper>

@@ -184,7 +184,7 @@ const Login = ({ onLogin, onReset }) => {
 
     if (Object.keys(newErrors).length === 0) {
       try {
-        const response = await axios.post("http://localhost:48857/api/admin/login", {
+        const response = await axios.post("https://api.aspiraskillhub.aspirasys.com/api/admin/login", {
           email,
           password,
         });
@@ -196,14 +196,18 @@ const Login = ({ onLogin, onReset }) => {
         }
 
         // Store token
-        localStorage.setItem("token", data.token);
+        localStorage.setItem("token", data);
 
         // ✅ Decode token to extract user details
         const decodedToken = jwtDecode(data.token);
+        console.log("Decoded Token:", decodedToken);
         localStorage.setItem("user_id", decodedToken.user_id);
         localStorage.setItem("role_id", decodedToken.role);
-        localStorage.setItem("username", decodedToken.name);
-
+        localStorage.setItem("username", data.user.name); // ✅
+        console.log("Username:", data.user.name);
+        onLogin(data.token, data.user.name);
+        
+        
         console.log("User ID:", decodedToken.user_id);
         console.log("Role ID:", decodedToken.role);
         console.log("Username:", decodedToken.name);

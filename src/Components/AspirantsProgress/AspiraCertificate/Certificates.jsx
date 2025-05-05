@@ -84,6 +84,11 @@ const Wrapper = styled.section`
     }
   }
 
+  .odd2 {
+    grid-template-columns: 1fr !important;
+    place-items: center;
+  }
+
   .stack-output {
     display: flex;
     align-items: center;
@@ -217,7 +222,7 @@ const Certificates = () => {
   useEffect(() => {
     const fetchStudents = async () => {
       try {
-        const response = await fetch("http://localhost:3000/admin/aspirants-certificates");
+        const response = await fetch("https://api.aspiraskillhub.aspirasys.com/admin/aspirants-certificates");
         if (!response.ok) throw new Error("Failed to fetch data");
         const data = await response.json();
         setStudents(data);
@@ -267,8 +272,8 @@ const Certificates = () => {
                   </thead>
                   <tbody>
                     {filteredStudents.length === 0 && (
-                      <tr style={{textAlign: "center"}}>
-                        <td colSpan="6">No data found</td>
+                      <tr className='odd odd2'>
+                        <td>No data available in the table</td>
                       </tr>
                     )}
                     {filteredStudents.map((student, index) => (

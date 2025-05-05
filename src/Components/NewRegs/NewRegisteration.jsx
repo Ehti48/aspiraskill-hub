@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
 import Heading from "../../Components/Heading";
-import newRegData from "../../NewRegApi";
+// import newRegData from "../../NewRegApi";
 import Button from "../../Components/Button";
 
 const Wrapper = styled.section`
@@ -379,7 +379,7 @@ const Wrapper = styled.section`
 `;
 
 const NewRegisteration = () => {
-  const [aspirants, setAspirants] = useState([...newRegData].reverse());
+  const [aspirants, setAspirants] = useState([]);
 
   const [search, setSearch] = useState({
     date: "",

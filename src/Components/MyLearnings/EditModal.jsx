@@ -422,7 +422,7 @@ const EditModal = ({ isOpen, onClose, techStack = {}, onSave, existingIds, fetch
           <ButtonGroup>
             <button className="cancel-btn" onClick={onClose}>Close</button>
             <button className="save-btn" onClick={() => { setLoading(true); handleSave(); }} disabled={loading}>
-              {loading ? "Saving..." : "Save"}
+              {techStack ? "Save" : "Create"}
             </button>
           </ButtonGroup>
         </ModalContent>

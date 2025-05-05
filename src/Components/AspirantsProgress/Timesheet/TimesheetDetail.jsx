@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import styled, { keyframes } from "styled-components";
 import Heading from "../../../Components/Heading";
 import Button from "../../../Components/Button";
 import { MdKeyboardArrowRight } from "react-icons/md";
 import axios from "axios";
+import ProgressLoader from "../../../Components/ProgressLoader";
 
 const Wrapper = styled.section`
   .dateSec {
@@ -403,59 +404,6 @@ const Wrapper = styled.section`
     }
 `;
 
-// Loading animation
-const spin = keyframes`
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-`;
-
-const LoadingOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(255, 255, 255, 0.9);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  transition: opacity 0.3s ease-out;
-`;
-
-const Spinner = styled.div`
-  width: 50px;
-  height: 50px;
-  border: 5px solid #f3f3f3;
-  border-top: 5px solid #3498db;
-  border-radius: 50%;
-  animation: ${spin} 1.5s linear infinite;
-`;
-
-const LoadingText = styled.p`
-  margin-top: 20px;
-  font-size: 1.2rem;
-  color: #333;
-  font-weight: 500;
-`;
-
-const ProgressBar = styled.div`
-  width: 200px;
-  height: 8px;
-  background-color: #f3f3f3;
-  border-radius: 4px;
-  margin-top: 15px;
-  overflow: hidden;
-`;
-
-const Progress = styled.div`
-  height: 100%;
-  width: ${props => props.progress}%;
-  background-color: #3498db;
-  transition: width 0.3s ease;
-`;
-
 const TimesheetDetail = () => {
   const [students, setStudents] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -470,8 +418,14 @@ const TimesheetDetail = () => {
   const [loadProgress, setLoadProgress] = useState(0);
 
   const location = useLocation();
-  const studentId = location.state?.studentId;
+  const aspirantId = location.state?.aspirantId;
+  const userId = location.state?.userId;
   const studentName = location.state?.studentName;
+
+  console.log(userId);
+  
+  
+  
 
   const idToType = {
     1: "Productive Effort",
@@ -560,11 +514,15 @@ const TimesheetDetail = () => {
         setLoadProgress(prev => Math.min(prev + 10, 90)); // Stop at 90% until load completes
       }, 200);
 
+      // const response = await axios.get(
+      //   `https://api.aspiraskillhub.aspirasys.com/api/admin/timesheet/${studentId.slice(4)}`
+      // );
       const response = await axios.get(
-        "http://localhost:48857/api/admin/timesheets"
+        `https://api.aspiraskillhub.aspirasys.com/api/admin/timesheet/${userId}`
       );
 
-      const data = response.data?.timesheets || [];
+      const data = response.data || [];
+      console.log(data);
 
       // Calculate remaining minimum loading time
       const elapsed = Date.now() - startTime;
@@ -578,6 +536,7 @@ const TimesheetDetail = () => {
 
         // Small delay to show 100% progress before hiding
         setTimeout(() => setIsLoading(false), 300);
+        console.log(data);
       }, remainingTime);
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -608,13 +567,7 @@ const TimesheetDetail = () => {
   return (
     <>
       {isLoading && (
-        <LoadingOverlay>
-          <Spinner />
-          <LoadingText>Loading Timesheet Data...</LoadingText>
-          <ProgressBar>
-            <Progress progress={loadProgress} />
-          </ProgressBar>
-        </LoadingOverlay>
+        <ProgressLoader progress={loadProgress} />
       )}
 
       <Wrapper>
@@ -626,13 +579,13 @@ const TimesheetDetail = () => {
               </li>
               <MdKeyboardArrowRight />
               <li className="breadcrumb-item active" aria-current="page">
-                {studentId}
+                {aspirantId}
               </li>
             </ol>
           </nav>
           <div className="usertime-id">
             <p className="usertime-name">
-              Aspirant : {studentId} - {studentName}
+              Aspirant : {aspirantId} - {studentName}
             </p>
           </div>
         </div>
@@ -852,42 +805,79 @@ const TimesheetDetail = () => {
             </div>
           </div>
           {filteredStudents.length > 10 && (
-            <div className="pagination">
+            <div className="pagination" style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '20px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
               <Button
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                style={{
+                  padding: '8px 15px',
+                  border: 'none',
+                  borderRadius: '5px',
+                  backgroundColor: currentPage === 1 ? 'gray' : '#3282c4',
+                  color: 'white',
+                  cursor: currentPage === 1 ? 'not-allowed' : 'pointer'
+                }}
                 disabled={currentPage === 1 || isLoading}
               >
                 Prev
               </Button>
-              {[...Array(pages)].map((_, i) => (
-                <button
-                  key={i + 1}
-                  onClick={() => setCurrentPage(i + 1)}
-                  disabled={isLoading}
-                  style={{
-                    padding: '8px 16px',
-                    border: 'none',
-                    borderRadius: '5px',
-                    backgroundColor: currentPage === i + 1 ? '#3282c4' : 'transparent',
-                    color: currentPage === i + 1 ? 'white' : '#3282c4',
-                    cursor: 'pointer',
-                    margin: '0 5px',
-                    boxShadow: currentPage === i + 1 ? 'none' : 'rgba(0, 0, 0, 0.2) 0px 0px 1px 1px',
-                  }}
-                >
-                  {i + 1}
-                </button>
-              ))}
+
+              {/* Render page numbers dynamically */}
+              {[...Array(pages)].map((_, index) => {
+                const page = index + 1;
+                // Show first page, last page, current page, and pages near current
+                if (
+                  page === 1 ||
+                  page === pages ||
+                  (page >= currentPage - 1 && page <= currentPage + 1)
+                ) {
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      disabled={isLoading}
+                      style={{
+                        padding: '8px 16px',
+                        border: 'none',
+                        borderRadius: '5px',
+                        backgroundColor: page === currentPage ? '#3282c4' : 'transparent',
+                        color: page === currentPage ? 'white' : '#3282c4',
+                        cursor: 'pointer',
+                        fontWeight: page === currentPage ? 'bold' : 'normal',
+                        boxShadow: page !== currentPage ? 'rgba(0, 0, 0, 0.2) 0px 0px 1px 1px' : 'none',
+                        margin: '0 2px'
+                      }}
+                    >
+                      {page}
+                    </button>
+                  );
+                }
+                // Show dots "..." if there is a gap
+                if (
+                  (page === currentPage - 2 && page !== 1) ||
+                  (page === currentPage + 2 && page !== pages)
+                ) {
+                  return <span key={page} style={{ margin: '0 5px' }}>...</span>;
+                }
+                return null;
+              })}
+
               <Button
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pages))}
-                style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, pages))}
+                style={{
+                  padding: '8px 15px',
+                  border: 'none',
+                  borderRadius: '5px',
+                  backgroundColor: currentPage === pages ? 'gray' : '#3282c4',
+                  color: 'white',
+                  cursor: currentPage === pages ? 'not-allowed' : 'pointer'
+                }}
                 disabled={currentPage === pages || isLoading}
               >
                 Next
               </Button>
             </div>
           )}
+
         </div>
       </Wrapper>
     </>

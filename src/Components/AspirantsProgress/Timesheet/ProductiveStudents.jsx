@@ -342,86 +342,95 @@ const Progress = styled.div`
 `;
 
 const ProductiveStudents = () => {
-    const location = useLocation();
-    const studentId = location.state?.studentId;
-    const studentName = location.state?.studentName;
+    const { state } = useLocation();
+    const { studentId, studentName, userId } = state ?? {};
 
     const [activeStage, setActiveStage] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [loadProgress, setLoadProgress] = useState(0);
 
-    const stages = [
-        {
-            stageName: 'Stage 01',
-            date: '2024-09-30',
-            description: 'Web Dev start',
-            color: '#FF6636',
-            bColor: '#FF6636',
-        },
-        {
-            stageName: 'Stage 02',
-            date: '2024-12-29',
-            description: 'Advance Tech Start',
-            color: '#007BFF',
-            bColor: '#007BFF',
-        },
-        {
-            stageName: 'Stage 03',
-            date: '2025-06-27',
-            description: 'Job ready',
-            color: '#28A745',
-            bColor: '#28A745',
-        },
-        {
-            stageName: 'Stage 04',
-            date: '2025-08-26',
-            description: 'Job Hired',
-            color: '#FFC107',
-            bColor: '#FFC10700',
-        },
-    ];
+    const fetchActiveStage = useCallback(
+        async () => {
+            const MIN_LOADING_TIME = 1500;
+            const startTime = Date.now();
+            let progressInterval;
 
-    const fetchActiveStage = useCallback(async () => {
-        const MIN_LOADING_TIME = 1500; // Minimum 1.5 seconds loading time
-        const startTime = Date.now();
-        let progressInterval;
+            try {
+                progressInterval = setInterval(() => {
+                    setLoadProgress((prev) => Math.min(prev + 10, 90));
+                }, 200);
 
-        try {
-            // Start progress simulation
-            progressInterval = setInterval(() => {
-                setLoadProgress(prev => Math.min(prev + 10, 90)); // Stop at 90% until load completes
-            }, 200);
+                const response = await axios.get(`https://api.aspiraskillhub.aspirasys.com/api/admin/timesheet/${userId}/productive-rate`);
 
-            const response = await axios.get(`http://localhost:48857/api/admin/timesheet/1/productive-rate`);
-            
-            // Calculate remaining minimum loading time
-            const elapsed = Date.now() - startTime;
-            const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsed);
+                const elapsed = Date.now() - startTime;
+                const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsed);
 
-            setTimeout(() => {
-                clearInterval(progressInterval);
-                setActiveStage(response.data);
-                setLoadProgress(100);
+                setTimeout(() => {
+                    clearInterval(progressInterval);
+                    setActiveStage(response.data);
+                    setLoadProgress(100);
+                    
+                    setTimeout(() => setIsLoading(false), 300);
+                }, remainingTime);
                 
-                // Small delay to show 100% progress before hiding
-                setTimeout(() => setIsLoading(false), 300);
-            }, remainingTime);
-        } catch (error) {
-            console.error('Error fetching active stage:', error);
-            const elapsed = Date.now() - startTime;
-            const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsed);
+            } catch (error) {
+                console.error('Error fetching active stage:', error);
+                const elapsed = Date.now() - startTime;
+                const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsed);
 
-            setTimeout(() => {
-                clearInterval(progressInterval);
-                setLoadProgress(100);
-                setTimeout(() => setIsLoading(false), 300);
-            }, remainingTime);
-        }
-    }, []);
+                setTimeout(() => {
+                    clearInterval(progressInterval);
+                    setLoadProgress(100);
+                    setTimeout(() => setIsLoading(false), 300);
+                }, remainingTime);
+            }
+        },
+        [userId]
+    );
 
     useEffect(() => {
-        fetchActiveStage();
-    }, [fetchActiveStage]);
+        if (userId) {
+            fetchActiveStage();
+        }
+    }, [fetchActiveStage, userId]);
+
+    const formatNumber = (value) => {
+        const num = parseFloat(value);
+        return Number.isNaN(num) ? 0 : num % 1 === 0 ? num.toString() : num.toFixed(2);
+      };
+
+      const STAGES = activeStage?.stages
+? [
+      {
+          stageName: 'Stage 01',
+          date: activeStage.stages.stage1,
+          description: 'Web Dev start',
+          color: '#FF6636',
+          bColor: '#FF6636',
+      },
+      {
+          stageName: 'Stage 02',
+          date: activeStage.stages.stage2,
+          description: 'Advance Tech Start',
+          color: '#007BFF',
+          bColor: '#007BFF',
+      },
+      {
+          stageName: 'Stage 03',
+          date: activeStage.stages.stage3,
+          description: 'Job ready',
+          color: '#28A745',
+          bColor: '#28A745',
+      },
+      {
+          stageName: 'Stage 04',
+          date: activeStage.stages.stage4,
+          description: 'Job Hired',
+          color: '#FFC107',
+          bColor: '#FFC107',
+      },
+  ]
+: []; 
 
     return (
         <>
@@ -462,7 +471,7 @@ const ProductiveStudents = () => {
                             <h6 className="font-20 fw_500">Journey Timeline</h6>
                             <div className="timesheet-productive-page">
                                 <div className="stage-level">
-                                    {stages.map((stage, index) => (
+                                    {STAGES.map((stage, index) => (
                                         <div key={index} className="stage-flow" style={{ '--block-color': stage.color, '--block-color-2': stage.bColor }}>
                                             <p className="productive-time font-12 fw_500" style={{ color: index === 0 ? stage.color : '#000000aa', marginBottom: '5px' }}>
                                                 {stage.stageName}
@@ -479,7 +488,7 @@ const ProductiveStudents = () => {
                         <div className="training-plan-content">
                             <div className="product-rate">
                                 <div className="tech-stack d-flex justify-content-between">
-                                    <Heading title='Productive rate' />
+                                    <Heading title="Productive rate" />
                                 </div>
                                 <div className="table-responsive any-role">
                                     <table className="table">
@@ -498,21 +507,21 @@ const ProductiveStudents = () => {
                                                     </td>
                                                 </tr>
                                             </tbody>
-                                        ) : activeStage ? (
+                                        ) : (
                                             <tbody>
                                                 <tr>
                                                     <td>Productive Effort</td>
-                                                    <td>{activeStage.productivity?.hours || 0}</td>
+                                                    <td>{formatNumber(activeStage.productivity?.hours || 0)}</td>
                                                     <td>{activeStage.productivity?.days || 0}</td>
                                                 </tr>
                                                 <tr>
                                                     <td>System/Power issue</td>
-                                                    <td>{activeStage.systemIssue?.hours || 0}</td>
+                                                    <td>{formatNumber(activeStage.systemIssue?.hours || 0)}</td>
                                                     <td>{activeStage.systemIssue?.days || 0}</td>
                                                 </tr>
                                                 <tr>
                                                     <td>Leave</td>
-                                                    <td>{activeStage.leave?.hours || 0}</td>
+                                                    <td>{formatNumber(activeStage.leave?.hours || 0)}</td>
                                                     <td>{activeStage.leave?.days || 0}</td>
                                                 </tr>
                                                 <tr>
@@ -522,19 +531,13 @@ const ProductiveStudents = () => {
                                                 </tr>
                                                 <tr className="grand-value">
                                                     <td>Grand Total</td>
-                                                    <td>{activeStage.totalHours}</td>
-                                                    <td>{activeStage.totalDays}</td>
+                                                    <td>{formatNumber(activeStage.totalHours ?? 0)}</td>
+                                                    <td>{activeStage.totalDays ?? 0}</td>
                                                 </tr>
                                                 <tr className="total-value">
                                                     <td>Productivity Rate</td>
                                                     <td></td>
-                                                    <td>{activeStage.productiveEffortPercentage}%</td>
-                                                </tr>
-                                            </tbody>
-                                        ) : (
-                                            <tbody>
-                                                <tr>
-                                                    <td colSpan="3">No productivity data available</td>
+                                                    <td>{activeStage.productiveEffortPercentage != null ? `${activeStage.productiveEffortPercentage}%` : '-'}</td>
                                                 </tr>
                                             </tbody>
                                         )}

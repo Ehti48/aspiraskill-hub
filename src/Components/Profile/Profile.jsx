@@ -3,7 +3,7 @@ import axios from "axios";
 import styled from "styled-components";
 import Heading from "../Heading";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-import Loader from "../Loader";
+import ProgressLoader from "../ProgressLoader";
 
 const Wrapper = styled.section`
   /* General Styles */
@@ -471,7 +471,7 @@ const Profile = () => {
     }
 
     try {
-      const response = await axios.get(`http://localhost:5000/admin/profile/view/${userId}`);
+      const response = await axios.get(`https://api.aspiraskillhub.aspirasys.com/admin/profile/view/${userId}`);
 
       console.log("API Response:", response.data);
 
@@ -520,7 +520,7 @@ const Profile = () => {
     delete payload.lastName;
 
     axios
-      .put(`http://localhost:5000/admin/profile/edit/${userId}`, payload)
+      .put(`https://api.aspiraskillhub.aspirasys.com/admin/profile/edit/${userId}`, payload)
       .then((response) => {
         // Update the name field in the state
         setFormData((prevData) => ({
@@ -582,7 +582,7 @@ const Profile = () => {
     }
     if (validateSecurityForm()) {
       axios
-        .put(`http://localhost:5000/admin/profile/change-password/${userId}`, passwords)
+        .put(`https://api.aspiraskillhub.aspirasys.com/admin/profile/change-password/${userId}`, passwords)
         .then(() => {
           alert("Password successfully changed!");
           setPasswords({ currentPassword: "", newPassword: "", confirmPassword: "" });
@@ -594,7 +594,7 @@ const Profile = () => {
 
   // Render loading state while data is being fetched
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <ProgressLoader delay={2000} />;
   }
 
   return (

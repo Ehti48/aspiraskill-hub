@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
-import Heading from '../../Heading';
-import { NavLink } from 'react-router-dom';
-import Button from '../../Button';
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import styled from "styled-components";
+import Heading from "../../Heading";
+import { NavLink } from "react-router-dom";
+import Button from "../../Button";
+import axios from "axios";
+import ProgressLoader from "../../ProgressLoader";
+import { useMemo } from "react";
 
 const Wrapper = styled.section`
 
@@ -54,11 +56,11 @@ const Wrapper = styled.section`
   }
 
   .odd {
-    min-width: 770px;
+    min-width: 900px;
     height: 45px;
     padding-left: 10px;
     display: grid;
-    grid-template-columns: 0.2fr 0.7fr 1.5fr 1.5fr 0.8fr 0.6fr !important;
+    grid-template-columns: 0.2fr 0.8fr 1.5fr 1.5fr 1fr 0.6fr !important;
     border: 1px solid #cbcbcb;
     border-top: none;
     justify-content: space-evenly;
@@ -227,12 +229,39 @@ const Wrapper = styled.section`
     text-decoration: none;
   }
 
-  .pagination {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 10px;
-  }
+.pagination-controls {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+}
+
+.page-button {
+  border: 1px solid #ccc;
+  background-color: white;
+  color: black;
+  margin: 0 4px;
+  transition: all 0.3s ease;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.page-button:hover {
+  background-color: #1976d2;
+  color: white;
+  border-color: #1976d2;
+}
+.page-button.active {
+  background-color: #1976d2;
+  color: white;
+  border-color: #1976d2;
+}
+
+.pagination-ellipsis {
+  margin: 0 8px;
+  font-size: 20px;
+}
 
   @media only screen and (max-width: 450px) {
     .header {
@@ -240,23 +269,71 @@ const Wrapper = styled.section`
       align-items: start !important;
       flex-direction: column;
     }
+
+        .pagination-controls {
+      gap: 5px;
+
+    button {
+      padding: 5px 12px;
+      font-size: 12px;
+    }
+    }
+  }
+
+    @media screen and (max-width: 375px) {
+    .pagination-controls {
+      button {
+        padding: 5px 10px;
+        font-size: 10px;
+      }
+    }
   }
 `;
 
 const TrainingPlan = () => {
   const [students, setStudents] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     const fetchTimesheets = async () => {
+      setIsLoading(true);
+      setProgress(0);
+
+      // Simulate progress
+      const interval = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 90) {
+            clearInterval(interval);
+            return prev;
+          }
+          return prev + 10;
+        });
+      }, 300);
+
       try {
-        const response = await axios.get('http://localhost:48857/api/admin/aspirants-progress');
-        console.log('API Response:', response.data);
+        const response = await axios.get(
+          "https://api.aspiraskillhub.aspirasys.com/api/admin/aspirants-progress"
+        );
+        console.log("API Response:", response.data);
         const data = response.data || [];
-        setStudents(data);
+
+        // Format training_plan_status
+        const formattedData = data.map((student) => ({
+          ...student,
+          training_plan_status:
+            student.training_plan_status.replace(".00", "") + "%",
+        }));
+
+        setStudents(formattedData);
       } catch (error) {
-        console.error('Error fetching students:', error.message);
+        console.error("Error fetching students:", error.message);
+      } finally {
+        clearInterval(interval);
+        setProgress(100);
+        setTimeout(() => setIsLoading(false), 300); // Small delay for smooth transition
       }
     };
 
@@ -265,23 +342,90 @@ const TrainingPlan = () => {
 
   const handleSearchChange = (e) => {
     setSearchQuery(e.target.value);
-    setCurrentPage(1); // Reset to first page on search
+    setCurrentPage(1);
   };
 
-  // Ensure undefined values don't cause issues
-  const filteredStudents = students.filter((student) =>
-    (typeof student?.full_name === 'string' && student.full_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (typeof student?.technology === 'string' && student.technology.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (typeof student?.aspirant_id === 'string' && student.aspirant_id.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filteredStudents = students.filter(
+    (student) =>
+      (typeof student?.full_name === "string" &&
+        student.full_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (typeof student?.technology === "string" &&
+        student.technology.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (typeof student?.aspirant_id === "string" &&
+        student.aspirant_id.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const pages = Math.ceil(filteredStudents.length / 10);
-  const start = (currentPage - 1) * 10;
-  const end = start + 10;
-  const paginatedStudents = filteredStudents.slice(start, end); // Use filtered list
+  const { pages, paginatedStudents } = useMemo(() => {
+    const pages = Math.ceil(filteredStudents.length / 10);
+    const start = (currentPage - 1) * 10;
+    const end = start + 10;
+    const paginatedStudents = filteredStudents.slice(start, end);
+
+    return { pages, paginatedStudents };
+  }, [filteredStudents, currentPage]);
+
+  const renderPagination = () => {
+    if (pages <= 1) return null;
+
+    const visiblePages = [];
+    const maxVisible = 5;
+
+    if (pages <= maxVisible) {
+      for (let i = 1; i <= pages; i++) {
+        visiblePages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        visiblePages.push(1, 2, 3, 4, '...', pages);
+      } else if (currentPage >= pages - 2) {
+        visiblePages.push(1, '...', pages - 3, pages - 2, pages - 1, pages);
+      } else {
+        visiblePages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', pages);
+      }
+    }
+
+    return (
+      <div className="pagination-controls">
+        {currentPage > 1 && (
+          <button
+            className="page-button"
+            onClick={() => setCurrentPage(currentPage - 1)}
+          >
+            Prev
+          </button>
+        )}
+
+        {visiblePages.map((page, index) => {
+          if (page === '...') {
+            return <span key={index} className="pagination-ellipsis">...</span>;
+          }
+          return (
+            <button
+              key={index}
+              className={`page-button ${currentPage === page ? "active" : ""}`}
+              onClick={() => setCurrentPage(page)}
+            >
+              {page}
+            </button>
+          );
+        })}
+
+        {currentPage < pages && (
+          <button
+            className="page-button"
+            onClick={() => setCurrentPage(currentPage + 1)}
+          >
+            Next
+          </button>
+        )}
+      </div>
+    );
+  };
 
   return (
     <Wrapper>
+      {isLoading && <ProgressLoader progress={progress} />}
+
       <div className="dateSec">
         <Heading title="Training Plan" />
         <div className="list-cont">
@@ -313,19 +457,30 @@ const TrainingPlan = () => {
                   {paginatedStudents.length > 0 ? (
                     paginatedStudents.map((student, index) => (
                       <tr className="odd" key={index}>
-                        <td>{start + index + 1}</td>
+                        <td>{(currentPage - 1) * 10 + index + 1}</td>
                         <td>{student.aspirant_id}</td>
                         <td>{student.technology}</td>
                         <td>{student.full_name}</td>
-                        <td className="cut-text">{student.last_status}</td>
+                        <td className="cut-text">
+                          {student.training_plan_status}
+                        </td>
                         <td className="stack-output">
                           <NavLink
-                            to="/admin/aspirants-progress/aspirant-tech"
-                            state={{ studentId: student.aspirant_id, studentTech: student.technology, studentAspirantId: student.aspirant_id, studentName: student.full_name }}
+                            to={`/admin/aspirants-progress/aspirants-technology/${student.user_id}`}
+                            state={{
+                              studentId: student.aspirant_id,
+                              studentTech: student.technology,
+                              techId: student.technology_id,
+                              userId: student.user_id,
+                              studentName: student.full_name,
+                            }}
                           >
                             <button className="btn re-submit">
                               <span>
-                                <img src="https://admin.aspiraskillhub.aspirasys.com/images/export-pro.png" alt="Export" />
+                                <img
+                                  src="https://admin.aspiraskillhub.aspirasys.com/images/export-pro.png"
+                                  alt="Export"
+                                />
                               </span>
                             </button>
                           </NavLink>
@@ -334,7 +489,11 @@ const TrainingPlan = () => {
                     ))
                   ) : (
                     <tr className="odd odd2">
-                      <td colSpan="7">No data available in the table.</td>
+                      <td colSpan="7">
+                        {isLoading
+                          ? "Loading..."
+                          : "No data available in the table."}
+                      </td>
                     </tr>
                   )}
                 </tbody>
@@ -342,46 +501,10 @@ const TrainingPlan = () => {
             </div>
           </div>
         </div>
-        {paginatedStudents.length > 10 && (
-          <div className="pagination">
-            <Button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
-              disabled={currentPage === 1}
-            >
-              Prev
-            </Button>
-            {[...Array(pages)].map((_, i) => (
-              <button
-                key={i + 1}
-                onClick={() => setCurrentPage(i + 1)}
-                style={{
-                  padding: '8px 16px',
-                  border: 'none',
-                  borderRadius: '5px',
-                  backgroundColor: currentPage === i + 1 ? '#3282c4' : 'transparent', // Active color changed
-                  color: currentPage === i + 1 ? 'white' : '#3282c4',
-                  cursor: 'pointer',
-                  margin: '0 5px',
-                  boxShadow: currentPage === i + 1 ? 'none' : 'rgba(0, 0, 0, 0.2) 0px 0px 1px 1px',
-                }}
-              >
-                {i + 1}
-              </button>
-            ))}
-            <Button
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pages))}
-              style={{ padding: '8px 15px', border: 'none', borderRadius: '5px', backgroundColor: '#3282c4', color: 'white', cursor: 'pointer' }}
-              disabled={currentPage === pages}
-            >
-              Next
-            </Button>
-          </div>
-        )}
+        {renderPagination()}
       </div>
     </Wrapper>
   );
 };
 
 export default TrainingPlan;
-
